@@ -32,6 +32,16 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-051
+    statement: "閲覧できないノートは、すべての入口（Web UI・サーバMCP・WebMCP）で存在しない id と同じ応答（Web は 404 画面、MCP は NOT_FOUND）を返す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-052
+    statement: "ノートの更新は version による楽観ロックとし、保存時の version が最新でなければ CONFLICT として保存しない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
 open_questions: []
 
@@ -121,6 +131,46 @@ acceptance:
     given: "美咲の private ノート"
     when: "健太が公開範囲の変更UIを探す（edit 共有されている場合を含む）"
     then: "健太の画面には公開範囲と共有の設定ボタンを表示しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-015
+    kind: functional
+    given: "version が1件のノート"
+    when: "編集権限を持つユーザーが body を更新する"
+    then: "更新前の body を持つ note_version の行が1件追加で保存される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-130
+    kind: functional
+    given: "健太に edit で共有された美咲のノート"
+    when: "健太のセッションでノート更新APIに visibility=workspace または owner_id=健太 を送る"
+    then: "403 を返し、visibility と owner_id は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-131
+    kind: functional
+    given: "健太が閲覧できない美咲の private ノート P"
+    when: "健太が /notes/P を開く"
+    then: "存在しない id を開いた場合と同じ 404 画面を表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-132
+    kind: functional
+    given: "美咲と翔が同じノートを version=3 で編集画面に開いている"
+    when: "美咲が保存した後に翔が保存する"
+    then: "翔の画面に『ほかの人が先に更新しました。再読み込みしてください』を表示し、美咲の保存内容は変わらない"
     priority: must
     verify: test
     status: pending

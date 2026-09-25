@@ -5,7 +5,7 @@
 # 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-005
-title: "サーバ合成 ask と回答UI: 根拠付きで今有効な答えを組み立てる"
+title: "サーバ合成 ask: 回答の契約をサーバ側で強制する"
 status: draft # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "散らばった断片から、今有効な答えを根拠付きで組み立てる（§1.2）。サーバが検索パイプラインの結果だけを材料に Claude で回答を合成し、すべての主張に根拠ノートを付け、旧情報・矛盾・更新の可能性を区別して返す。美咲が回答の正しさを自分で判断できなくても、どれが現行でどこに書いてあるかが画面で分かる状態を作る。"
@@ -32,8 +32,13 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
-  - id: AS-019
-    statement: "『なぜ』『経緯』『いつから』を含む質問は timeline 形式として扱い、claims を date の昇順に並べ、判断が変わった時点に『この時点で判断が変わりました』を付ける"
+  - id: AS-046
+    statement: "LLM に渡すのは searchKnowledge の結果（hits / superseded_context / conflicts）のチャンクだけとする。superseded_context のノートを kind=current で引用した claim は kind=outdated に降格して outdated_mentions に回す。conflicts がある場合、片方だけを current で引用していても、サーバが両方のマーカーを併記する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-047
+    statement: "not_found の『近い情報』は、LLM が not_found=true を返した時に検索結果の hits 上位最大3件とし、検索ヒットが0件の場合は併記しない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -48,7 +53,7 @@ open_questions:
 acceptance:
   - id: AC-037
     kind: functional
-    given: "出張規程シナリオ・美咲（LLM は契約テスト用スタブ）"
+    given: "出張規程シナリオ・美咲（スタブは改定通知を kind=current で引用する claim を返す）"
     when: "『出張の宿泊費の上限はいくら？』を ask する"
     then: "citations に改定通知の note_id を含む Answer を返す"
     priority: must
@@ -116,54 +121,72 @@ acceptance:
     status: pending
     attempts: 0
 
-  - id: AC-044
+  - id: AC-104
     kind: functional
-    given: "決済サービス選定シナリオ（議事録3本・比較表・一度覆った判断）"
-    when: "健太が『決済サービスをなぜA社にしたんだっけ？』を ask する"
-    then: "citations を日付の昇順で並べ、最後の段落に現時点で有効な決定とその根拠マーカーを含む Answer を返す"
+    given: "出張規程シナリオ。スタブが旧規程の note_id を kind=current で引用する claim を返す"
+    when: "ask する"
+    then: "旧規程を citations に含まず outdated_mentions にだけ含む Answer を返す"
     priority: must
     verify: test
     status: pending
     attempts: 0
 
-  - id: AC-045
+  - id: AC-105
     kind: functional
-    given: "Anthropic API がタイムアウトまたは5xxを返す状態"
-    when: "Web UI の質問欄から質問する"
-    then: "『回答を作成できませんでした。時間をおいて再度お試しください』を表示し、部分的な回答を表示しない"
+    given: "スタブが note_ids=[] の claim を1件含めて返す"
+    when: "ask する"
+    then: "その claim の text を answer に含まない Answer を返す"
     priority: must
     verify: test
     status: pending
     attempts: 0
 
-  - id: AC-046
+  - id: AC-106
     kind: functional
-    given: "citations と outdated_mentions と conflicts を含む Answer"
-    when: "Web UI の質問欄に表示する"
-    then: "引用マーカー[1]をクリックすると根拠ノートの該当チャンクを表示し、旧情報には『旧情報』ラベルを表示する"
+    given: "スタブが返す claim がすべて AC-041 / AC-104 / AC-105 の規則で捨てられる"
+    when: "ask する"
+    then: "not_found=true で citations が空配列の Answer を返す"
     priority: must
     verify: test
     status: pending
     attempts: 0
 
-  - id: AC-047
+  - id: AC-107
     kind: functional
-    given: "UC1・UC2 の評価セット（実 Claude API）"
-    when: "評価スクリプトで各質問を10回ずつ ask する"
-    then: "旧情報を現行として回答した件数が0件と記録される"
-    priority: should
-    verify: manual
-    evidence: ""
+    given: "転記メモと改定通知に contradicts がある。スタブは改定通知だけを kind=current で引用する"
+    when: "ask する"
+    then: "answer に両ノートの引用マーカーを含む Answer を返す（conflicts の両ノートをサーバが併記する）"
+    priority: must
+    verify: test
     status: pending
     attempts: 0
 
-  - id: AC-048
-    kind: nfr
-    given: "出張規程シナリオ"
-    when: "Web UI の質問欄から質問して回答が表示されるまでの時間を20回計測する（実 Claude API）"
-    then: "p50 が 5秒 以下である"
-    priority: should
-    verify: manual
-    evidence: ""
+  - id: AC-108
+    kind: functional
+    given: "役員向け規程（private、美咲は閲覧不可）があり、LLM はリクエストを記録するスタブ"
+    when: "美咲が『出張の宿泊費の上限はいくら？』を ask する"
+    then: "記録したリクエストの文字列は役員向け規程の id・タイトル・本文断片を含まないと判定される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-109
+    kind: functional
+    given: "AC-037 と同じ状態"
+    when: "ask する"
+    then: "answer 内のすべての [n] と citations の marker が1対1で一致し、各 citation の title と chunk は検索結果の Hit と等しい値を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-110
+    kind: functional
+    given: "検索結果はあるが、スタブが not_found=true を返す"
+    when: "ask する"
+    then: "not_found=true で、検索結果の上位最大3件を『近い情報』として citations 付きで answer に含む Answer を返す"
+    priority: must
+    verify: test
     status: pending
     attempts: 0

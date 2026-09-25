@@ -1,0 +1,106 @@
+# FEAT-010 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ5 / §6.4 / UC2 / §9.3
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-010
+title: "回答UIと経緯の再構成: 引用・旧情報・矛盾を画面で区別し、決定の経緯を時系列で示す"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "健太が『なぜそう決めたか』をたどれるように、経緯を問う質問には関連ノートを日付順に並べて判断が変わった時点を示し、美咲が回答の根拠をワンクリックで確かめられるように、Web UI に引用・旧情報・矛盾を区別して表示する。回答の契約（FEAT-005）の上に乗る表示と形式の要件を扱う。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "回答の会話履歴・ストリーミング表示・フィードバック収集"
+
+assumptions:
+  - id: AS-019
+    statement: "『なぜ』『経緯』『いつから』を含む質問は timeline 形式として扱う。並び順は LLM の返す日付ではなく、引用ノートの effective_from（無ければ作成日時）でサーバが決める"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-048
+    statement: "Anthropic API の呼び出しは30秒でタイムアウトし、1回だけ再試行する。構造化出力がスキーマに合わない場合も失敗として扱う"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions: []
+
+acceptance:
+  - id: AC-044
+    kind: functional
+    given: "決済サービス選定シナリオ（議事録3本・比較表・一度覆った判断）"
+    when: "健太が『決済サービスをなぜA社にしたんだっけ？』を ask する"
+    then: "citations を note の effective_from（無ければ作成日時）の昇順で並べ、覆った判断を引用する claim の直後に『この時点で判断が変わりました』を含み、最後の段落に現行の決定のマーカーを含む Answer を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-045
+    kind: functional
+    given: "Anthropic API がタイムアウトまたは5xxを返す状態"
+    when: "Web UI の質問欄から質問する"
+    then: "『回答を作成できませんでした。時間をおいて再度お試しください』を表示し、部分的な回答を表示しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-046
+    kind: functional
+    given: "citations と outdated_mentions と conflicts を含む Answer"
+    when: "Web UI の質問欄に表示する"
+    then: "引用マーカー[1]をクリックすると根拠ノートの該当チャンクを表示し、旧情報には『旧情報』ラベルを表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-047
+    kind: functional
+    given: "UC1・UC2 の評価セット（実 Claude API）"
+    when: "評価スクリプトで各質問を10回ずつ ask する"
+    then: "評価スクリプトが、kind=current で superseded ノートを引用した claim と outdated_mentions 以外で旧規程の金額を含む文の件数を0件と記録する"
+    priority: should
+    verify: manual
+    evidence: ""
+    status: pending
+    attempts: 0
+
+  - id: AC-048
+    kind: nfr
+    given: "出張規程シナリオ"
+    when: "Web UI の質問欄から質問して回答が表示されるまでの時間を20回計測する（実 Claude API）"
+    then: "p50 が 5秒 以下である"
+    priority: should
+    verify: manual
+    evidence: ""
+    status: pending
+    attempts: 0
+
+  - id: AC-111
+    kind: functional
+    given: "質問『決済サービスはいつからA社？』と『出張の宿泊費の上限は？』"
+    when: "それぞれ ask する"
+    then: "前者は timeline 形式（claims を日付順）の Answer を返し、後者は timeline 形式にしない Answer を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-119
+    kind: functional
+    given: "Anthropic API が失敗する状態"
+    when: "サーバMCP の ask を呼ぶ"
+    then: "部分的な answer を含まず code=UPSTREAM_ERROR の isError 結果を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0

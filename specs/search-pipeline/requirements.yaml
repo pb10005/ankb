@@ -51,6 +51,26 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-037
+    statement: "possibly_outdated と conflicts は、関係の両端のノートを質問者が閲覧できる場合だけ立てる（§5.2-4）。置き換え先が見えない superseded だけは『より新しい版がある可能性』として superseded_context に残す（§6.1）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-039
+    statement: "archived のノートは検索結果（hits / superseded_context）に含めない。クエリ展開の LLM 呼び出しは3秒でタイムアウトし、元のクエリだけで検索を続ける"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-040
+    statement: "保存時の embedding 生成に失敗した場合もノートの保存は成功させ、chunk は embedding=null で保存して全文検索の対象にする。embedding はバックグラウンドジョブが補完する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-042
+    statement: "サービスロールキーを読むコードは src/jobs/ 配下だけに置く（§5.3）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
 open_questions: []
 
@@ -151,6 +171,46 @@ acceptance:
     when: "LLM のクエリ展開をスタブにして検索を100回実行する"
     then: "p95 応答時間が 800ms 以下である"
     priority: should
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-100
+    kind: functional
+    given: "権限シナリオ"
+    when: "健太のJWTで検索用のRPC（ベクトル検索・全文検索）を /rest/v1/rpc から直接呼ぶ"
+    then: "健太が閲覧できないノートの chunk を0件返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-101
+    kind: functional
+    given: "リポジトリ全体"
+    when: "SUPABASE_SERVICE_ROLE_KEY を参照するファイルを列挙するテストを実行する"
+    then: "src/jobs/ 配下以外のファイルを0件返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-102
+    kind: functional
+    given: "美咲から見える active なノート A と、見えない B の間に contradicts と B→A の proposed supersedes がある"
+    when: "美咲が A に該当する語で検索する"
+    then: "conflicts が空で、A の possibly_outdated=false の結果を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-103
+    kind: functional
+    given: "権限シナリオ"
+    when: "各ユーザーで同じクエリを、そのユーザーが閲覧できないノートと付随する chunk・relation を削除する前と後で検索する（差分テスト）"
+    then: "2つの SearchResult の hits / superseded_context / conflicts が一致する（AC-028 の表示を除く）"
+    priority: must
     verify: test
     status: pending
     attempts: 0

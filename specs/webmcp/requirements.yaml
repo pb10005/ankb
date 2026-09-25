@@ -16,18 +16,13 @@ out_of_scope:
   - "view / edit より細かいロール（指示書 §11）"
   - "ネイティブモバイルアプリ（指示書 §11）"
   - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
-  - "WebMCP 非対応ブラウザ向けの代替手段（拡張機能・ポリフィル）。非対応ブラウザでは人間向けUIだけが動く（OQ-003）"
+  - "WebMCP 非対応ブラウザ向けの代替手段（拡張機能・ポリフィル）。非対応ブラウザでは人間向けUIだけが動く（AS-056）"
   - "ankb 自身がブラウザ内アシスタント（チャットUI）を提供すること。アシスタントはブラウザまたは拡張機能側が持つ"
-  - "CDP 経由の isTrusted=true な合成入力による承認・保存の偽装の防止（残存リスクとして AS-029 に記録）"
+  - "CDP 経由の isTrusted=true な合成入力による承認・保存の偽装の防止（残存リスクとして FEAT-011 AS-029 に記録）"
 
 assumptions:
   - id: AS-031
     statement: "WebMCP は 2026-09-25 時点の仕様ドラフト（webmachinelearning/webmcp の index.bs、CG-DRAFT）に合わせる。エントリポイントは document.modelContext（SecureContext 必須）、登録は registerTool(tool, {signal})、解除は signal の abort、execute(input, {signal}) の戻り値は JSON シリアライズ可能なオブジェクト。読み取り系と画面操作のツールには annotations.readOnlyHint=true、request_relation_approval と draft_note には consequentialHint=true を付ける。document.modelContext が無い場合は何も登録しない"
-    status: assumed
-    owner: pb10005
-    resolve_by: "2026-10-09"
-  - id: AS-027
-    statement: "WebMCP で登録するツールは、サーバMCPの読み取り系5件（search_knowledge / ask / get_note / get_note_lineage / list_pending_relations）、画面操作5件（get_current_context / open_note / open_compare_view / highlight_citation / draft_note）、request_relation_approval の計11件とする。propose_relation は §6.2（WebMCP のエージェントも提案できる）と §7.2（読み取り系＋画面操作）が食い違うため v1 では登録しない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -36,23 +31,28 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
-  - id: AS-029
-    statement: "承認・保存のボタンは isTrusted=false のイベントを無視する。CDP 経由の合成入力は isTrusted=true になるため防げず、残存リスクとして受容する"
-    status: assumed
-    owner: pb10005
-    resolve_by: "2026-10-09"
   - id: AS-030
     statement: "E2E テストでは Playwright の addInitScript で document.modelContext のスタブ（registerTool(tool, {signal}) / getTools()）を注入し、登録・解除と execute の結果を検証する。加えて Chrome のフラグ enable-webmcp-testing を有効にした実ブラウザでのスモークテストを手動で1回行う"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-027
+    statement: "WebMCP で登録するツールは、サーバMCPの読み取り系5件（search_knowledge / ask / get_note / get_note_lineage / list_pending_relations）、画面操作5件（get_current_context / open_note / open_compare_view / highlight_citation / draft_note）、request_relation_approval、propose_relation の計12件とする。propose_relation は §7.2 の表には無いが §6.2（WebMCP のエージェントも提案できる）に従って登録する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-053
+    statement: "エディタに未保存の編集がある間、open_note と draft_note は画面を変えず UNSAVED_CHANGES を返す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-056
+    statement: "WebMCP 非対応ブラウザ向けの代替手段は用意しない。非対応ブラウザでは人間向けUI（質問欄の ask を含む）だけが動く（指示書 §12 の未決を既定値で仮決め）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
-open_questions:
-  - id: OQ-003
-    question: "WebMCP 非対応ブラウザでの代替手段（指示書 §12）"
-    default: "代替手段は用意しない。非対応ブラウザでは人間向けUI（質問欄 ask を含む）だけが動く"
-    raised: "2026-09-25"
-    status: open
+open_questions: []
 
 acceptance:
   - id: AC-072
@@ -69,7 +69,7 @@ acceptance:
     kind: functional
     given: "document.modelContext があるブラウザでログイン済み"
     when: "/dashboard を開く"
-    then: "registerTool に渡された name の集合が AS-027 の11件と一致する"
+    then: "registerTool に渡された name の集合が AS-027 の12件と一致する"
     priority: must
     verify: test
     status: pending
@@ -125,36 +125,6 @@ acceptance:
     status: pending
     attempts: 0
 
-  - id: AC-079
-    kind: functional
-    given: "proposed の提案 R"
-    when: "エージェントが request_relation_approval(R) を execute する"
-    then: "承認ダイアログを表示し、人間がクリックするまで R の state は proposed のまま変わらない"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-080
-    kind: functional
-    given: "AC-079 の承認ダイアログを表示中"
-    when: "ページ内スクリプトから『はい』ボタンに element.click() を行う（isTrusted=false）"
-    then: "承認を拒否し、R の state は proposed のまま変わらない"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-081
-    kind: functional
-    given: "AC-079 の承認ダイアログを表示中"
-    when: "美咲が『はい』をクリックする"
-    then: "R の state を confirmed に更新し、ツール結果に confirmed を返す"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
   - id: AC-082
     kind: functional
     given: "ログイン済みの画面"
@@ -180,6 +150,46 @@ acceptance:
     given: "title が <img src=x onerror=window.__xss=1> のノート"
     when: "エージェントが open_note でそのノートを開く"
     then: "その文字列をテキストとして表示し、window.__xss は undefined のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-127
+    kind: functional
+    given: "権限シナリオの各ユーザーでログインした画面"
+    when: "12ツールすべてを、そのユーザーが閲覧できないノートの id を引数に execute する"
+    then: "どの結果にも不可視ノートの id・title・本文断片・件数を含まず、存在しない id と同じ {code:'NOT_FOUND'} を返し、画面は遷移しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-128
+    kind: functional
+    given: "ログイン済みで /dashboard → ノート画面 → 検索画面 → /dashboard とクライアント側遷移した"
+    when: "getTools() を呼ぶ"
+    then: "12件の name をそれぞれ1回ずつ含む配列を返し、registerTool の例外は0件と記録される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-129
+    kind: functional
+    given: "ツール登録済みのタブ A"
+    when: "別タブ B でログアウトする"
+    then: "タブ A は登録を解除し、解除前に呼ばれた execute はデータを返さず UNAUTHENTICATED を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-134
+    kind: functional
+    given: "美咲が未保存の編集内容をエディタに持っている"
+    when: "エージェントが open_note または draft_note を execute する"
+    then: "UNSAVED_CHANGES のエラーを返し、エディタの内容と表示中の画面は変わらない"
     priority: must
     verify: test
     status: pending

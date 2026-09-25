@@ -37,8 +37,23 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-050
+    statement: "MCP の create_note は visibility を受け付けず常に private で作成する。status は draft（既定）または active を受け付ける。update_note は title・body・effective_from と status の draft→active だけを受け付け、visibility・archived・superseded の指定は VALIDATION_ERROR とする（公開範囲の変更と削除は人間がUIで行う: §7.1）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-054
+    statement: "ask はユーザーあたり1時間20回までとし、超えた場合は RATE_LIMITED を返す（LLM 利用料の暴走を防ぐ）。上限は環境変数 ANKB_ASK_RATE_LIMIT で変更できる"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
-open_questions: []
+open_questions:
+  - id: OQ-003
+    question: "外部エージェントが OAuth トークンで Supabase を直接叩けば、MCP にツールが無くても承認・公開範囲の変更ができてしまう。OAuth 経由のトークンを JWT クレーム（client_id）で識別し、resolve_relation・visibility・note_share・member の書き込みを DB 側で拒否してよいか（§0: 権限に関わる変更のため承認が必要）。あわせて、Supabase Auth の OAuth 2.1 サーバが Claude Code の接続に必要な動的クライアント登録に対応していない場合の代替"
+    default: "クレームで識別して DB 側で拒否する。Supabase の OAuth サーバで接続できない場合は、ankb 自身が MCP 用の OAuth 認可エンドポイントを持ち、Supabase の JWT を client_id クレーム付きで発行し直す"
+    raised: "2026-09-25"
+    status: open
 
 acceptance:
   - id: AC-060
@@ -46,16 +61,6 @@ acceptance:
     given: "OAuthで認可済みの翔のトークン"
     when: "tools/list を呼ぶ"
     then: "search_knowledge / ask / get_note / get_note_lineage / list_pending_relations / create_note / update_note / propose_relation の8件だけを返す"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-061
-    kind: functional
-    given: "翔のトークン"
-    when: "search_knowledge を呼ぶ"
-    then: "hits / superseded_context / conflicts と、空でない文字列の synthesis_guidelines を持つ structuredContent を返す"
     priority: must
     verify: test
     status: pending
@@ -93,9 +98,9 @@ acceptance:
 
   - id: AC-065
     kind: functional
-    given: "Authorization ヘッダの無いリクエスト"
-    when: "POST /mcp を送る"
-    then: "401 と、Protected Resource Metadata の URL を含む WWW-Authenticate ヘッダを返す"
+    given: "(a) Authorization ヘッダ無し (b) 有効期限切れのJWT (c) 署名が不正なJWT (d) Web UI のログインで得たセッションJWT"
+    when: "それぞれで POST /mcp を送る"
+    then: "4ケースとも 401 と Protected Resource Metadata の URL を含む WWW-Authenticate ヘッダを返し、ツールを実行しない"
     priority: must
     verify: test
     status: pending
@@ -104,8 +109,8 @@ acceptance:
   - id: AC-066
     kind: functional
     given: "翔のトークン"
-    when: "create_note を visibility・status を指定せずに呼ぶ"
-    then: "visibility=private / status=draft のノートを作成する"
+    when: "create_note を visibility・status を指定せずに呼び、続けて visibility=workspace を指定して呼ぶ"
+    then: "1回目は visibility=private / status=draft のノートを作成し、2回目は VALIDATION_ERROR を返してノートを作成しない"
     priority: must
     verify: test
     status: pending
@@ -159,5 +164,35 @@ acceptance:
     priority: must
     verify: manual
     evidence: ""
+    status: pending
+    attempts: 0
+
+  - id: AC-120
+    kind: functional
+    given: "翔が両方のノートの編集権限を持つ proposed の提案 R と、OAuth で得た翔のアクセストークン"
+    when: "そのトークンで Supabase の REST API から rpc/resolve_relation(R, confirm) と notes の visibility 更新を直接呼ぶ"
+    then: "両方ともエラーを返して拒否し、R は proposed、visibility は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-123
+    kind: functional
+    given: "翔のトークン"
+    when: "tools/list を呼び、search_knowledge と ask を実行する"
+    then: "8ツールすべてに outputSchema を含み、search_knowledge は SearchResult 型、ask は Answer 型（§7.3）のスキーマ検証を通る structuredContent を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-124
+    kind: functional
+    given: "active なノート X と、X に contradicts(proposed) で結ばれた閲覧可能なノート Y"
+    when: "get_note(X) を呼ぶ"
+    then: "status・possibly_outdated と conflicts:[{note_ids:[X,Y], relation_state:'proposed'}] を含む structuredContent を返す"
+    priority: must
+    verify: test
     status: pending
     attempts: 0

@@ -5,7 +5,7 @@
 # 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-002
-title: "スキーマとRLS: ノートの公開範囲・編集権限・状態遷移をDBで強制する"
+title: "スキーマとRLS: ノートの閲覧・編集権限をDBで強制する"
 status: draft # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "権限と有効性の判定を入口ごとの実装に任せると、Web UI・サーバMCP・WebMCP のどれか1つの抜けが情報漏洩になる。§4 のテーブルと §5 の権限モデルを Postgres の RLS とトリガーで強制し、どの入口から読んでも閲覧できないノートが1行も返らず、superseded への遷移が承認経由でしか起きない状態を作る。"
@@ -43,6 +43,16 @@ assumptions:
     resolve_by: "2026-10-09"
   - id: AS-008
     statement: "visibility の変更はオーナーのみが行える。edit 共有されたユーザーは body・title を編集できるが visibility と note_share は変更できない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-038
+    statement: "draft のノートは visibility に従って閲覧できる（直接リンク・get_note）が、オーナー以外の検索結果には出さない。§4.2 は検索についてだけ定めており、閲覧権限（§5、変更禁止）は変えない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-041
+    statement: "note_chunk / note_version の INSERT・UPDATE は can_edit_note(note_id) を満たすユーザーだけに許す。note_share と member の書き込みは、note_share はノートのオーナー、member は workspace の owner だけに許す"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -90,66 +100,6 @@ acceptance:
     status: pending
     attempts: 0
 
-  - id: AC-010
-    kind: functional
-    given: "オーナー本人の active なノート"
-    when: "オーナーのJWTで status を superseded に直接 UPDATE する"
-    then: "エラーを返して拒否し、status は active のまま変わらない"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-011
-    kind: functional
-    given: "active なノート A・B と、両方の編集権限を持つユーザー"
-    when: "note_relation(from=B, to=A, type=supersedes) の state を proposed から confirmed に変更する"
-    then: "A の status が superseded になり、A.superseded_by に B の id が保存される"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-012
-    kind: functional
-    given: "AC-011 で A が superseded になった状態"
-    when: "その note_relation の state を rejected に変更する（置き換えの取り消し）"
-    then: "A の status が active に戻り、A.superseded_by が null に更新される"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-013
-    kind: functional
-    given: "A・B のうち B だけ編集権限を持つユーザー"
-    when: "A↔B の proposed な note_relation の state を confirmed に変更する"
-    then: "エラーを返して拒否し、state は proposed のまま変わらない"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-014
-    kind: functional
-    given: "美咲の private ノート P と健太の workspace ノート Q の間の note_relation"
-    when: "P を閲覧できない健太のJWTで note_relation を SELECT する"
-    then: "その関係の行を0行返す"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-015
-    kind: functional
-    given: "version が1件のノート"
-    when: "編集権限を持つユーザーが body を更新する"
-    then: "更新前の body を持つ note_version の行が1件追加で保存される"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
   - id: AC-016
     kind: functional
     given: "空のデータベース"
@@ -165,6 +115,86 @@ acceptance:
     given: "どのユーザーのJWTも持たない anon ロール"
     when: "notes / note_relation / note_chunk を SELECT する"
     then: "3テーブルとも0行を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-085
+    kind: functional
+    given: "美咲が所有する visibility=private のノート P"
+    when: "健太のJWTで note_share(note_id=P, user_id=健太, permission=view) を INSERT する"
+    then: "エラーを返して拒否し、以後も健太の P への SELECT は0行を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-086
+    kind: functional
+    given: "workspace W と、W に属さないユーザー X、W の role=member のユーザー Y"
+    when: "X のJWTで member(W, X) を INSERT し、Y のJWTで自分の role を owner に UPDATE する"
+    then: "両方ともエラーを返して拒否し、member テーブルは変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-087
+    kind: functional
+    given: "美咲のノートを翔に edit で共有している"
+    when: "翔のJWTで visibility・owner_id・workspace_id の UPDATE と note_share の INSERT をそれぞれ行う"
+    then: "4操作ともエラーを返して拒否し、各値は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-088
+    kind: functional
+    given: "workspace W のメンバー健太"
+    when: "owner_id=美咲、または健太が属さない workspace_id を指定して notes を INSERT する"
+    then: "両方ともエラーを返して拒否し、notes は保存されない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-089
+    kind: functional
+    given: "美咲の private ノート P（chunk・version が各1件以上）"
+    when: "健太のJWTで note_chunk / note_version / note_share を note_id=P 指定と条件なし count=exact でそれぞれ SELECT する"
+    then: "3テーブルとも P に関する行を含まない結果（行数・件数とも0）を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-090
+    kind: functional
+    given: "visibility=workspace のノートを健太が検索で見られる状態"
+    when: "オーナーが visibility を private に変更した直後に、健太のJWTで note_chunk を SELECT する"
+    then: "そのノートの chunk を0行返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-091
+    kind: functional
+    given: "マイグレーション適用後のDB"
+    when: "pg_proc から SECURITY DEFINER の関数を列挙する"
+    then: "許可リスト（can_view_note / can_edit_note / resolve_relation / 状態遷移トリガー関数）に一致し、全関数に search_path の設定を含む"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-092
+    kind: functional
+    given: "workspace の role=owner のユーザーと、他のメンバーの private ノート"
+    when: "owner のJWTで notes を SELECT する"
+    then: "他のメンバーの private ノートを0行返す"
     priority: must
     verify: test
     status: pending

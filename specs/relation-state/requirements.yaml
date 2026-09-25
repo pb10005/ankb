@@ -1,0 +1,185 @@
+# FEAT-009 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ2 / §4.2 / §4.3 / §5.2-4
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-009
+title: "ノートの状態遷移: superseded は承認経由でしか起きず、見えない相手の情報を漏らさない"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "『どれが今有効か』の判定は ankb の価値の中核であり、superseded への遷移が承認以外の経路で起きれば、旧情報を現行として回答する事故に直結する。note_relation と notes の状態遷移を DB のトリガーと RPC に閉じ込め、承認・取り消し・多重の置き換え・循環を決定的に扱い、閲覧できない置き換え先の id を列の値から漏らさないようにする。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "contradicts / related 関係の状態遷移に伴うノートの status 変更（contradicts を承認しても両ノートは active のまま）"
+  - "置き換え関係の一括インポート"
+
+assumptions:
+  - id: AS-032
+    statement: "notes.superseded_by 列は authenticated ロールに直接公開しない。読み出しはビュー notes_visible（security_invoker）経由とし、置き換え先を can_view_note で判定して閲覧できない場合は null を返す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-033
+    statement: "note_relation.state の遷移は proposed→confirmed、proposed→rejected、confirmed→rejected（取り消し）の3つだけとし、すべて resolve_relation(relation_id, decision: confirm|reject|revoke) で行う。rejected は終端"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-034
+    statement: "1つのノートを複数のノートが confirmed で置き換えている場合、superseded_by は最後に承認された関係の from とする。取り消しで confirmed の置き換えが無くなった時だけ active に戻す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-035
+    statement: "supersedes の承認は、置き換え対象が active または superseded、置き換え元が active の場合だけ許す。confirmed の supersedes をたどって循環になる承認は拒否する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-036
+    statement: "resolve_relation は対象行を SELECT ... FOR UPDATE でロックし、state が期待値でなければ ALREADY_RESOLVED を返す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-045
+    statement: "superseded のノートも編集できるが、status は変わらず推定ジョブも起動しない。置き換え先が archived になっても置き換えられた側は superseded のまま"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions: []
+
+acceptance:
+  - id: AC-010
+    kind: functional
+    given: "オーナー本人の active なノート"
+    when: "オーナーのJWTで status を superseded に直接 UPDATE する"
+    then: "エラーを返して拒否し、status は active のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-011
+    kind: functional
+    given: "active なノート A・B と、両方の編集権限を持つユーザー"
+    when: "note_relation(from=B, to=A, type=supersedes) の state を proposed から confirmed に変更する"
+    then: "A の status が superseded になり、A.superseded_by に B の id が保存される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-012
+    kind: functional
+    given: "AC-011 で A が superseded になった状態"
+    when: "その note_relation の state を rejected に変更する（置き換えの取り消し）"
+    then: "A の status が active に戻り、A.superseded_by が null に更新される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-013
+    kind: functional
+    given: "A・B のうち B だけ編集権限を持つユーザー"
+    when: "A↔B の proposed な note_relation の state を confirmed に変更する"
+    then: "エラーを返して拒否し、state は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-014
+    kind: functional
+    given: "美咲の private ノート P と健太の workspace ノート Q の間の note_relation"
+    when: "P を閲覧できない健太のJWTで note_relation を SELECT する"
+    then: "その関係の行を0行返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-093
+    kind: functional
+    given: "A は健太から閲覧でき、A.superseded_by=B、B は健太から閲覧できない"
+    when: "健太のJWTで A を PostgREST（notes_visible ビュー）経由で取得する"
+    then: "B の id を文字列に含まず、status=superseded / superseded_by=null の行を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-094
+    kind: functional
+    given: "両ノートの編集権限を持つユーザー"
+    when: "(a) note_relation.state の直接 UPDATE、(b) state=confirmed での INSERT、(c) notes.superseded_by の直接 UPDATE、(d) superseded のノートを active に直接 UPDATE、(e) status=superseded での notes INSERT、(f) 他人の uuid を resolved_by に入れた書き込み を試す"
+    then: "6操作ともエラーを返して拒否し、notes と note_relation は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-095
+    kind: functional
+    given: "B→A と C→A の supersedes が両方 confirmed（C が後に承認）"
+    when: "resolve_relation で C→A を取り消す"
+    then: "A は superseded のまま、superseded_by=B に更新される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-096
+    kind: functional
+    given: "B→A の supersedes が confirmed"
+    when: "A→B の supersedes の提案を resolve_relation で承認する"
+    then: "エラーを返して拒否し、A→B の state は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-097
+    kind: functional
+    given: "置き換え対象 A が draft または archived"
+    when: "B→A の supersedes を resolve_relation で承認する"
+    then: "エラーを返して拒否し、A の status は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-098
+    kind: functional
+    given: "存在しない relation_id と、呼び出し者が閲覧できないノートの relation_id"
+    when: "resolve_relation を呼ぶ"
+    then: "両方に同じエラーコードと同じメッセージを返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-099
+    kind: functional
+    given: "B→A が confirmed の後、C→B の提案がある"
+    when: "resolve_relation で C→B を承認する"
+    then: "A と B の status が superseded、C が active の状態を返す（A.superseded_by=B、B.superseded_by=C）"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-113
+    kind: functional
+    given: "同じ提案 R を2つのセッションで開いている"
+    when: "一方が承認した直後に他方が却下する"
+    then: "後の操作は ALREADY_RESOLVED のエラーを返し、R.state は confirmed、resolved_by は最初のユーザーのまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0

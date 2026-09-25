@@ -31,13 +31,18 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
-  - id: AS-022
-    statement: "『同じペアは再提案しない』は、(from, to, type) の組に加えて逆向きの組も対象とし、rejected の関係が存在する限り再提案しない"
+  - id: AS-023
+    statement: "推定ジョブはサービスロールで動くが、ジョブが読むのはトリガー元ノートと同じ workspace のノートだけとする"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
-  - id: AS-023
-    statement: "推定ジョブはサービスロールで動くが、ジョブが読むのはトリガー元ノートと同じ workspace のノートだけとする"
+  - id: AS-043
+    statement: "同じノートの組（向き・type を問わない）に proposed / confirmed / rejected のいずれかの note_relation がある場合、推定ジョブは新しい提案を作らない（AS-022 を置き換える）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-044
+    statement: "LLM が『既存ノートがトリガー元ノートを置き換える』と判定した場合は from=既存ノート として保存し、バナー文言は『このノートは「X」に置き換えられていますか？』とする"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -95,16 +100,6 @@ acceptance:
     status: pending
     attempts: 0
 
-  - id: AC-054
-    kind: functional
-    given: "LLM スタブが確信度0.69の supersedes 判定を返す"
-    when: "ノートを active にする"
-    then: "note_relation を作成しない"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
   - id: AC-055
     kind: functional
     given: "類似度の高い active ノートが8件ある"
@@ -150,6 +145,46 @@ acceptance:
     given: "LLM API が5xxを返す状態"
     when: "ノートを active にする"
     then: "ノートの保存は成功し、推定ジョブは最大3回まで再試行した後に失敗を記録して note_relation を作成しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-054
+    kind: functional
+    given: "LLM スタブが確信度0.69と0.70の supersedes 判定を別々の候補に返す"
+    when: "ノートを active にする"
+    then: "0.70 の候補だけ note_relation を proposed で作成し、0.69 の候補は作成しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-112
+    kind: functional
+    given: "健太の private ノート P と、美咲が active にした新ノート N の間に AI 提案がある（美咲は P を閲覧不可）"
+    when: "美咲が N の画面を開く"
+    then: "バナーを表示せず、ページの HTML と API レスポンスに P の id・タイトル・rationale を含まない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-114
+    kind: functional
+    given: "N↔A の関係が proposed で存在し、推定ジョブが途中の候補で5xxを受けて再試行する"
+    when: "N を再度更新して保存し、ジョブの完了を待つ"
+    then: "各ノートの組の note_relation は1件のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-116
+    kind: functional
+    given: "スタブが contradicts（確信度0.8）を返す"
+    when: "ノートを active にし、バナーで『はい』を押す"
+    then: "『このノートは「X」と内容が食い違っています』を表示し、承認後は state=confirmed で両ノートの status は active のまま変わらない"
     priority: must
     verify: test
     status: pending

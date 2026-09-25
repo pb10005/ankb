@@ -1,0 +1,80 @@
+# FEAT-011 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ8 / §6.2 / §7.2 / UC5
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-011
+title: "WebMCP の承認フロー: エージェントはダイアログを開くまで、確定は人間のクリックだけ"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "ブラウザ内エージェントは承認ダイアログを開けても、置き換え関係を確定できてはならない（§2.2 D、§6.2）。request_relation_approval が開いたダイアログは、人間の実際のクリックでだけ確定し、権限の無い提案・保留・中断・遷移のいずれでも提案の状態を変えない。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "CDP 経由の isTrusted=true な合成入力による承認の偽装の防止（残存リスクとして AS-029 に記録）"
+  - "複数の提案をまとめて承認するダイアログ（一括処理はインボックスで人間が行う）"
+
+assumptions:
+  - id: AS-029
+    statement: "承認・却下のボタンは isTrusted=false のイベントを無視する。CDP 経由の合成入力は isTrusted=true になるため防げず、残存リスクとして受容する。WebMCP の仕様にユーザー確認API（Issue #165 で議論中）が入った場合はそちらへ移行する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions: []
+
+acceptance:
+  - id: AC-079
+    kind: functional
+    given: "proposed の提案 R"
+    when: "エージェントが request_relation_approval(R) を execute する"
+    then: "承認ダイアログを表示し、人間がクリックするまで R の state は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-080
+    kind: functional
+    given: "AC-079 の承認ダイアログを表示中"
+    when: "ページ内スクリプトから『はい』ボタンに element.click() を行う（isTrusted=false）"
+    then: "承認を拒否し、R の state は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-081
+    kind: functional
+    given: "AC-079 の承認ダイアログを表示中"
+    when: "美咲が『はい』をクリックする"
+    then: "R の state を confirmed に更新し、ツール結果に confirmed を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-125
+    kind: functional
+    given: "美咲が旧ノートの閲覧権限しか持たない proposed の提案 R"
+    when: "エージェントが request_relation_approval(R) を execute する"
+    then: "ダイアログを表示せず FORBIDDEN を返し、R は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-126
+    kind: functional
+    given: "AC-079 の承認ダイアログを表示中"
+    when: "(a) 美咲が『後で』を押す (b) execute の signal が abort される (c) 別ページへ遷移する"
+    then: "(a) は deferred を返し、(b)(c) はダイアログを閉じて AbortError で終わり、3ケースとも R は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0

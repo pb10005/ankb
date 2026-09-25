@@ -36,6 +36,11 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-055
+    statement: "ログイン後の遷移先 next パラメータは / で始まり // で始まらない同一オリジンの相対パスだけを受け付け、それ以外は /dashboard に置き換える"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
 open_questions:
   - id: OQ-001
@@ -93,5 +98,15 @@ acceptance:
     priority: must
     verify: inspection
     evidence: ""
+    status: pending
+    attempts: 0
+
+  - id: AC-133
+    kind: functional
+    given: "未ログインのブラウザ"
+    when: "/login?next=https://evil.example/ でログインする"
+    then: "外部URLへは遷移せず /dashboard へ遷移する"
+    priority: must
+    verify: test
     status: pending
     attempts: 0
