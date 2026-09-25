@@ -1,4 +1,4 @@
-// @covers AC-016
+// @covers AC-016, AC-027
 // @assumption AS-042
 // fixtures/ のシナリオを DB に投入する。アプリのテーブルを空にしてから入れ直すので、何度実行しても同じ状態になる。
 // Postgres に直接接続する（サービスロールキーは使わない: AS-042）。
@@ -6,12 +6,14 @@
 //   npm run seed            # DATABASE_URL 未設定時はローカル Supabase（supabase start）に接続
 import pg from "pg";
 import { loadScenarios, loadWorkspaces, noteId, workspaceId } from "./fixtures";
+import { buildChunkRows } from "../core/indexing";
+import type { Embedder } from "../core/embedding";
 
 export const LOCAL_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 
 export type SeedCounts = { workspaces: number; members: number; notes: number; shares: number; relations: number };
 
-export async function seed(databaseUrl = process.env.DATABASE_URL ?? LOCAL_DATABASE_URL): Promise<SeedCounts> {
+export async function seed(databaseUrl = process.env.DATABASE_URL ?? LOCAL_DATABASE_URL, embedder?: Embedder): Promise<SeedCounts> {
   const client = new pg.Client({ connectionString: databaseUrl });
   await client.connect();
   const counts: SeedCounts = { workspaces: 0, members: 0, notes: 0, shares: 0, relations: 0 };
@@ -49,6 +51,15 @@ export async function seed(databaseUrl = process.env.DATABASE_URL ?? LOCAL_DATAB
           [noteId(n.slug), workspaceId(n.workspace), userId(n.owner), n.title, n.body, n.status, n.visibility, n.effective_from ?? null],
         );
         counts.notes++;
+        // 検索用のチャンクと embedding（VOYAGE_API_KEY が無ければスタブ）
+        for (const c of await buildChunkRows(noteId(n.slug), n.title, n.body, embedder)) {
+          await client.query("insert into public.note_chunk (note_id, chunk_index, content, embedding) values ($1, $2, $3, $4)", [
+            c.note_id,
+            c.chunk_index,
+            c.content,
+            c.embedding,
+          ]);
+        }
         for (const s of n.shares ?? []) {
           await client.query(
             "insert into public.note_share (note_id, workspace_id, user_id, permission) values ($1, $2, $3, $4)",

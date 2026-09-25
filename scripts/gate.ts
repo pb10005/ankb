@@ -37,7 +37,7 @@ run([tsxCli, "scripts/trace-matrix.ts", ...process.argv.slice(2)]);
 
 console.log("── 3/4 テスト");
 // ankb: テストランナーは Vitest（FEAT-001 AS-002）。E2E（Playwright）は Supabase と Next.js の起動が要るため CI の別ステップで回す
-run([join(root, "node_modules", "vitest", "vitest.mjs"), "run"]);
+run([join(root, "node_modules", "vitest", "vitest.mjs"), "run", "--project", "unit", "--project", "db"]);
 
 console.log("── 4/4 型");
 run([tscBin, "--noEmit"]);

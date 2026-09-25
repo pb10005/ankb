@@ -9,7 +9,7 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --project unit --project db",
     "typecheck": "next typegen && tsc --noEmit",
     "spec": "tsx scripts/spec-init.ts",
     "lint:spec": "tsx scripts/spec-lint.ts",
@@ -23,9 +23,11 @@
     "test:e2e": "playwright test",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
-    "seed": "tsx src/seed/seed.ts"
+    "seed": "tsx src/seed/seed.ts",
+    "test:eval": "vitest run --project eval"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "next": "^16.3.6",

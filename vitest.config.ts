@@ -18,6 +18,17 @@ export default defineConfig({
           hookTimeout: 60_000,
         },
       },
+      {
+        // 実 API（Voyage AI / Anthropic）を使う評価テスト。npm run test:eval で明示的に実行する
+        test: {
+          name: "eval",
+          include: ["tests/eval/**/*.test.ts"],
+          environment: "node",
+          globalSetup: ["tests/setup/global-db.ts"],
+          fileParallelism: false,
+          testTimeout: 60_000,
+        },
+      },
     ],
   },
 });

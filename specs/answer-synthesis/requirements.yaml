@@ -28,7 +28,7 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-018
-    statement: "合成に使うモデルは claude-sonnet-5 を既定とし、環境変数 ANKB_ANSWER_MODEL で変更できる。温度は0とする"
+    statement: "合成に使うモデルは claude-opus-5 を既定とし、環境変数 ANKB_ANSWER_MODEL で変更できる。claude-opus-5 は temperature を受け付けないため指定しない（出力の揺れは構造化出力とサーバ側の組み立てで抑える: AS-017）。拒否に備えて server-side fallback（fallbacks: default）を付ける"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"

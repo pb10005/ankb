@@ -49,7 +49,7 @@ describe("閲覧権限（§5.1）", () => {
 
   it("AC-017: anon ロールで notes / note_relation / note_chunk を SELECT すると3テーブルとも0行", async () => {
     const anon = asAnon();
-    await admin().query("insert into public.note_chunk (note_id, chunk_index, content) values ($1, 0, 'anon テスト用チャンク')", [
+    await admin().query("insert into public.note_chunk (note_id, chunk_index, content) values ($1, 99, 'anon テスト用チャンク')", [
       noteId("perm-misaki-workspace"),
     ]);
     const n = await anon.from("notes").select(NOTE_COLS);

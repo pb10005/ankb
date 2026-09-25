@@ -1,3 +1,4 @@
+// @covers AC-027, AC-033
 // @covers AC-015, AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-024, AC-025, AC-026, AC-130, AC-131, AC-132
 // @assumption AS-010
 // @assumption AS-051
@@ -9,6 +10,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fail, ok, type Result } from "./result";
 import type { NoteStatus, Visibility } from "./labels";
+import { reindexNote } from "./indexing";
 
 export type Note = {
   id: string;
@@ -73,6 +75,7 @@ export async function createNote(
     .insert({ id, workspace_id: input.workspace_id, owner_id: uid, title: input.title, body: input.body });
   if (error) return fail("FORBIDDEN", "このワークスペースにはノートを作成できません");
   const created = await getNote(client, id);
+  if (created?.ok) await reindexNote(client, created.value);
   return created ?? fail("NOT_FOUND", "ノートが見つかりません");
 }
 
@@ -146,6 +149,7 @@ export async function updateNote(client: SupabaseClient, id: string, raw: Record
   }
   if (count === 0) return fail("CONFLICT", CONFLICT_MESSAGE);
   const updated = await getNote(client, id);
+  if (updated?.ok && (patch.title !== undefined || patch.body !== undefined)) await reindexNote(client, updated.value);
   return updated ?? fail("NOT_FOUND", "ノートが見つかりません");
 }
 
