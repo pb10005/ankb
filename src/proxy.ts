@@ -1,10 +1,10 @@
-// @covers AC-001, AC-004
+// @covers AC-001, AC-004, AC-131
 // 全リクエストで Supabase のセッション cookie を更新し、未ログインで保護ページを開いたら /login へ送る。
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/supabase/env";
 
-const PROTECTED_PREFIXES = ["/dashboard"];
+const PROTECTED_PREFIXES = ["/dashboard", "/notes"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

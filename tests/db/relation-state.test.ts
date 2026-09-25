@@ -119,8 +119,8 @@ describe("superseded への遷移は承認経由のみ（§4.2）", () => {
     expect((await relationRow(back)).state).toBe("proposed");
     expect((await noteRow(b)).status).toBe("active");
 
-    // 置き換え元が active のまま循環になるケース: C→D confirmed の後、D が再び active に戻ることは無いため、
-    // 3ノートの連鎖 E→F→G（G superseded by F, F superseded by E）で G→E を承認する
+    // 3ノートの連鎖 E→F→G（G superseded by F, F superseded by E）で G→E を承認する。
+    // G は superseded なので置き換え元の検査で拒否される（循環判定の分岐は AS-035 の下では多重防御）
     const e = await createNote({ owner: "misaki" });
     const f = await createNote({ owner: "misaki" });
     const g = await createNote({ owner: "misaki" });
@@ -214,5 +214,18 @@ describe("閲覧できない相手の情報を漏らさない（§5.2-4）", () 
     // notes 本体からも superseded_by は読めない
     const direct = await kenta.from("notes").select("superseded_by").eq("id", a);
     expect(direct.error).not.toBeNull();
+  });
+});
+
+describe("状態遷移トリガーは version を上げない", () => {
+  it("AC-011: 承認で superseded になった A の version は承認前と同じ（編集中の利用者を CONFLICT にしない: AS-064）", async () => {
+    const a = await createNote({ owner: "misaki" });
+    const b = await createNote({ owner: "misaki" });
+    const before = (await noteRow(a)).version;
+    const rel = await relate(b, a, "supersedes");
+    expect((await resolve("misaki", rel, "confirm")).error).toBeNull();
+    const row = await noteRow(a);
+    expect(row.status).toBe("superseded");
+    expect(row.version).toBe(before);
   });
 });

@@ -1,4 +1,5 @@
 -- @covers AC-006, AC-007, AC-008, AC-009, AC-017, AC-085, AC-086, AC-087, AC-088, AC-089, AC-090, AC-091, AC-092
+-- @covers AC-015
 -- @covers AC-010, AC-011, AC-012, AC-013, AC-014, AC-093, AC-094, AC-095, AC-096, AC-097, AC-098, AC-099, AC-113
 -- @assumption AS-004
 -- @assumption AS-005
@@ -12,6 +13,13 @@
 -- @assumption AS-036
 -- @assumption AS-038
 -- @assumption AS-041
+-- @assumption AS-003
+-- @assumption AS-010
+-- @assumption AS-052
+-- @assumption AS-063
+-- @assumption AS-064
+-- @assumption AS-065
+-- @assumption AS-066
 --
 -- ankb のスキーマと権限（指示書 §4 / §5）。§5 と §4.2 は変更禁止。
 -- 閲覧・編集の判定は can_view_note / can_edit_note に一本化し、全テーブルのポリシーがこれを呼ぶ。
@@ -210,8 +218,11 @@ begin
     end if;
   end if;
 
-  new.version := old.version + 1;
-  new.updated_at := now();
+  -- 状態遷移トリガーによる変更は利用者の編集ではないので version を上げない（AS-064）
+  if not internal then
+    new.version := old.version + 1;
+    new.updated_at := now();
+  end if;
   return new;
 end;
 $$;

@@ -1,4 +1,5 @@
 // @covers AC-016
+// @assumption AS-002
 // テストから .env.local（supabase start の出力値）を読む
 import { existsSync } from "node:fs";
 

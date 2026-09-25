@@ -42,6 +42,26 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-060
+    statement: "共有先の候補は、呼び出し者が所属する workspace のメンバーだけを返すビュー workspace_directory（表示名とメールアドレス）から選ぶ。member テーブル自体は自分の行しか見えない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-061
+    statement: "ノート作成時の workspace は、所属が1つならそれを使い、複数なら作成画面で選ばせる。ノートの状態の表記は draft=『下書き』、active=『有効』、superseded=『置き換え済み』、archived=『アーカイブ済み』とする"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-062
+    statement: "ノート更新API は PATCH /api/notes/{id}（ログインセッションの cookie で認証）とし、200 / 400 VALIDATION_ERROR / 403 FORBIDDEN / 404 NOT_FOUND / 409 CONFLICT を返す。title・body・effective_from・status・visibility と expected_version 以外のフィールドを送ると 403 を返す。Web UI の保存とこのAPIは同じ updateNote 関数を通す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-067
+    statement: "非公開（private）のノートで共有先を追加したら、公開範囲を『指定した人』（shared）に切り替える。非公開のままでは共有先が読めない（§5.1）ため"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
 open_questions: []
 

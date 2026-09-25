@@ -52,7 +52,12 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-041
-    statement: "note_chunk / note_version の INSERT・UPDATE は can_edit_note(note_id) を満たすユーザーだけに許す。note_share と member の書き込みは、note_share はノートのオーナー、member は workspace の owner だけに許す"
+    statement: "note_chunk / note_version の INSERT・UPDATE（note_chunk は DELETE も）は can_edit_note(note_id) を満たすユーザーだけに許す。note_share と member の書き込みは、note_share はノートのオーナー、member は workspace の owner だけに許す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-066
+    statement: "member の行は本人の行しか SELECT できない（自己参照ポリシーの再帰を避けるため）。同僚の一覧は workspace_directory ビュー（FEAT-003 AS-060）で引く。ノートを所有するメンバーは FK により member から削除できない（v1 はメンバー管理画面を持たない: AS-003）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -67,8 +72,11 @@ acceptance:
     then: "0行を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 健太JWT(PostgREST)でerror null・0行を検証。vitest 14/14 pass
+    evidence: tests/db/schema-rls.test.ts:13
 
   - id: AC-007
     kind: functional
@@ -77,8 +85,11 @@ acceptance:
     then: "健太には1行を返し、翔には0行を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 健太1行・翔0行の両方をJWT経由で検証
+    evidence: tests/db/schema-rls.test.ts:20
 
   - id: AC-008
     kind: functional
@@ -87,8 +98,11 @@ acceptance:
     then: "メンバーには1行を返し、非メンバーには0行を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: メンバー1行・非メンバー(outsider)0行を検証
+    evidence: tests/db/schema-rls.test.ts:33
 
   - id: AC-009
     kind: functional
@@ -97,8 +111,11 @@ acceptance:
     then: "健太の UPDATE は0行更新で body が変わらず、翔の UPDATE は1行更新する"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 健太count=0かつbody不変、翔count=1かつbody更新の全部を検証
+    evidence: tests/db/schema-rls.test.ts:66
 
   - id: AC-016
     kind: functional
@@ -107,8 +124,11 @@ acceptance:
     then: "出張規程・決済サービス選定・権限の3シナリオのノートを作成し、fixtures/ に定義した件数と一致する"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: アプリテーブルtruncate後にseed実行、3シナリオ名・シナリオ別件数・総件数がfixturesと一致(20件)
+    evidence: tests/db/schema-rls.test.ts:196
 
   - id: AC-017
     kind: functional
@@ -117,8 +137,11 @@ acceptance:
     then: "3テーブルとも0行を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: anonはSELECT権限あり(migration:368-370)でRLSにより3テーブルとも0行。chunk/relationは実データ存在下で検証
+    evidence: tests/db/schema-rls.test.ts:50
 
   - id: AC-085
     kind: functional
@@ -127,8 +150,11 @@ acceptance:
     then: "エラーを返して拒否し、以後も健太の P への SELECT は0行を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: INSERTのerror、note_share不変、以後のSELECT 0行を検証
+    evidence: tests/db/schema-rls.test.ts:85
 
   - id: AC-086
     kind: functional
@@ -137,8 +163,11 @@ acceptance:
     then: "両方ともエラーを返して拒否し、member テーブルは変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: outsiderのmember INSERTとkentaのrole=owner UPDATEが両方error、member全行不変を検証
+    evidence: tests/db/schema-rls.test.ts:96
 
   - id: AC-087
     kind: functional
@@ -147,8 +176,11 @@ acceptance:
     then: "4操作ともエラーを返して拒否し、各値は変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 4操作ともerror、visibility/owner_id/workspace_id不変、note_share不変を検証
+    evidence: tests/db/schema-rls.test.ts:108
 
   - id: AC-088
     kind: functional
@@ -157,8 +189,11 @@ acceptance:
     then: "両方ともエラーを返して拒否し、notes は保存されない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: owner_id=美咲、非所属workspaceの両INSERTがerror、DBに0件を検証
+    evidence: tests/db/schema-rls.test.ts:126
 
   - id: AC-089
     kind: functional
@@ -167,8 +202,11 @@ acceptance:
     then: "3テーブルとも P に関する行を含まない結果（行数・件数とも0）を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: chunk/version/share各1件の前提を確認の上、note_id指定0行と条件なしcount=exactでPを含まない(count=見える行数)を3テーブルで検証
+    evidence: tests/db/schema-rls.test.ts:140
 
   - id: AC-090
     kind: functional
@@ -177,8 +215,11 @@ acceptance:
     then: "そのノートの chunk を0行返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 変更前1行の前提確認、美咲JWTでprivate化後に健太0行を検証
+    evidence: tests/db/schema-rls.test.ts:168
 
   - id: AC-091
     kind: functional
@@ -187,8 +228,11 @@ acceptance:
     then: "許可リスト（can_view_note / can_edit_note / resolve_relation / 状態遷移トリガー関数）に一致し、全関数に search_path の設定を含む"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: public のprosecdef関数が許可リスト4件と一致、全件search_path設定を検証。psqlで他スキーマもSupabase基盤関数のみと確認
+    evidence: tests/db/schema-rls.test.ts:183
 
   - id: AC-092
     kind: functional
@@ -197,5 +241,8 @@ acceptance:
     then: "他のメンバーの private ノートを0行返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: workspace owner(yuki)で他メンバーのprivate 3件が0行
+    evidence: tests/db/schema-rls.test.ts:42

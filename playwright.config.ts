@@ -1,4 +1,5 @@
 // @covers AC-001, AC-002, AC-003, AC-004, AC-133
+// @assumption AS-002
 import { defineConfig, devices } from "@playwright/test";
 import { existsSync } from "node:fs";
 

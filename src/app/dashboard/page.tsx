@@ -1,4 +1,5 @@
-// @covers AC-002, AC-004
+// @covers AC-002, AC-004, AC-019
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "./actions";
@@ -23,6 +24,9 @@ export default async function DashboardPage() {
       </header>
       <p>
         ログイン中: <span data-testid="current-user-email">{user.email}</span>
+      </p>
+      <p>
+        <Link href="/notes">ノート一覧</Link>
       </p>
     </main>
   );

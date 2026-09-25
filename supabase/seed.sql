@@ -1,4 +1,4 @@
--- @covers AC-002
+-- @covers AC-002, AC-008, AC-086
 -- @assumption AS-003
 -- v1 のユーザーはシードでのみ作成する（サインアップ画面は無い）。パスワードはローカル・CI 専用。
 create or replace function pg_temp.seed_user(p_id uuid, p_email text, p_name text, p_password text)

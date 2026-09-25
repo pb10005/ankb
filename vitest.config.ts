@@ -1,4 +1,5 @@
 // @covers AC-005, AC-016
+// @assumption AS-002
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({

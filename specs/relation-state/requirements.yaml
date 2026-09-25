@@ -50,6 +50,21 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-063
+    statement: "notes.status の直接の遷移は draft→active、draft→archived、active→archived の3つだけとし、archived は v1 では終端（アーカイブの解除は無い）とする。superseded のノートは置き換えを取り消すまでアーカイブできない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-064
+    statement: "置き換えの承認・取り消しによる status / superseded_by の変更（状態遷移トリガー経由）では version と updated_at を変えない。version は本文・タイトル・公開範囲の編集に対する楽観ロック（AS-052）にだけ使う"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-065
+    statement: "note_relation の proposed_by=ai はバックグラウンドジョブ（サービスロール）だけが作れる。利用者のトークンで作れる提案は user / agent のみとし、提案者を created_by に記録する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
 open_questions: []
 
@@ -61,8 +76,11 @@ acceptance:
     then: "エラーを返して拒否し、status は active のまま変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: オーナーJWTのUPDATEがerror、statusがactiveのまま
+    evidence: tests/db/relation-state.test.ts:24
 
   - id: AC-011
     kind: functional
@@ -71,8 +89,11 @@ acceptance:
     then: "A の status が superseded になり、A.superseded_by に B の id が保存される"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: resolve_relation(confirm)後 A.status=superseded、superseded_by=B
+    evidence: tests/db/relation-state.test.ts:32
 
   - id: AC-012
     kind: functional
@@ -81,8 +102,11 @@ acceptance:
     then: "A の status が active に戻り、A.superseded_by が null に更新される"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: revoke後 state=rejected、A.status=active、superseded_by=null
+    evidence: tests/db/relation-state.test.ts:43
 
   - id: AC-013
     kind: functional
@@ -91,8 +115,11 @@ acceptance:
     then: "エラーを返して拒否し、state は proposed のまま変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 片側のみ編集可でFORBIDDENエラー、state=proposed、A不変
+    evidence: tests/db/relation-state.test.ts:57
 
   - id: AC-014
     kind: functional
@@ -101,8 +128,11 @@ acceptance:
     then: "その関係の行を0行返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 健太JWTで該当relation 0行(error null)
+    evidence: tests/db/relation-state.test.ts:192
 
   - id: AC-093
     kind: functional
@@ -111,8 +141,11 @@ acceptance:
     then: "B の id を文字列に含まず、status=superseded / superseded_by=null の行を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: notes_visible経由で1行、status=superseded、superseded_by=null、JSONにBのid無し。notes直読みのsuperseded_byはエラー
+    evidence: tests/db/relation-state.test.ts:202
 
   - id: AC-094
     kind: functional
@@ -121,8 +154,11 @@ acceptance:
     then: "6操作ともエラーを返して拒否し、notes と note_relation は変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: (a)-(f)の6操作すべてerror、notes/note_relationのスナップショット不変、INSERT行0件を検証
+    evidence: tests/db/relation-state.test.ts:67
 
   - id: AC-095
     kind: functional
@@ -131,8 +167,11 @@ acceptance:
     then: "A は superseded のまま、superseded_by=B に更新される"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: C→A revoke後 A.status=superseded、superseded_by=B
+    evidence: tests/db/relation-state.test.ts:96
 
   - id: AC-096
     kind: functional
@@ -141,8 +180,11 @@ acceptance:
     then: "エラーを返して拒否し、A→B の state は proposed のまま変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: A→B承認がerror、state=proposed、B active を検証
+    evidence: tests/db/relation-state.test.ts:111
 
   - id: AC-097
     kind: functional
@@ -151,8 +193,11 @@ acceptance:
     then: "エラーを返して拒否し、A の status は変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: draft/archivedの両方で承認error、status不変、relation proposedを検証
+    evidence: tests/db/relation-state.test.ts:135
 
   - id: AC-098
     kind: functional
@@ -161,8 +206,11 @@ acceptance:
     then: "両方に同じエラーコードと同じメッセージを返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 存在しないid と不可視relationで error.code と message が一致(NOT_FOUND)
+    evidence: tests/db/relation-state.test.ts:148
 
   - id: AC-099
     kind: functional
@@ -171,8 +219,11 @@ acceptance:
     then: "A と B の status が superseded、C が active の状態を返す（A.superseded_by=B、B.superseded_by=C）"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: A superseded(by B)、B superseded(by C)、C active
+    evidence: tests/db/relation-state.test.ts:161
 
   - id: AC-113
     kind: functional
@@ -181,5 +232,8 @@ acceptance:
     then: "後の操作は ALREADY_RESOLVED のエラーを返し、R.state は confirmed、resolved_by は最初のユーザーのまま変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 美咲承認直後の翔の却下がALREADY_RESOLVED、state=confirmed、resolved_by=美咲。FOR UPDATEはmigration:292
+    evidence: tests/db/relation-state.test.ts:175
