@@ -1,0 +1,16 @@
+{
+  "scenario": "権限シナリオ（private / shared / workspace × 3ユーザー）",
+  "notes": [
+    { "slug": "perm-misaki-private", "workspace": "sample-shoji", "owner": "misaki", "visibility": "private", "status": "active", "title": "美咲の非公開メモ", "body": "美咲だけが読める権限検証用のメモ。合言葉はアサガオ。" },
+    { "slug": "perm-misaki-shared", "workspace": "sample-shoji", "owner": "misaki", "visibility": "shared", "status": "active", "title": "美咲の共有メモ", "body": "健太に閲覧、翔に編集で共有した権限検証用のメモ。合言葉はヒマワリ。", "shares": [ { "user": "kenta", "permission": "view" }, { "user": "sho", "permission": "edit" } ] },
+    { "slug": "perm-misaki-workspace", "workspace": "sample-shoji", "owner": "misaki", "visibility": "workspace", "status": "active", "title": "美咲のチーム共有メモ", "body": "サンプル商事の全員が読める権限検証用のメモ。合言葉はコスモス。" },
+    { "slug": "perm-kenta-private", "workspace": "sample-shoji", "owner": "kenta", "visibility": "private", "status": "active", "title": "健太の非公開メモ", "body": "健太だけが読める権限検証用のメモ。合言葉はツバキ。" },
+    { "slug": "perm-kenta-shared", "workspace": "sample-shoji", "owner": "kenta", "visibility": "shared", "status": "active", "title": "健太の共有メモ", "body": "翔に閲覧で共有した権限検証用のメモ。合言葉はサクラ。", "shares": [ { "user": "sho", "permission": "view" } ] },
+    { "slug": "perm-kenta-workspace", "workspace": "sample-shoji", "owner": "kenta", "visibility": "workspace", "status": "active", "title": "健太のチーム共有メモ", "body": "サンプル商事の全員が読める権限検証用のメモ。合言葉はモミジ。" },
+    { "slug": "perm-sho-private", "workspace": "sample-shoji", "owner": "sho", "visibility": "private", "status": "active", "title": "翔の非公開メモ", "body": "翔だけが読める権限検証用のメモ。合言葉はスミレ。" },
+    { "slug": "perm-sho-shared", "workspace": "sample-shoji", "owner": "sho", "visibility": "shared", "status": "active", "title": "翔の共有メモ", "body": "美咲に編集で共有した権限検証用のメモ。合言葉はアジサイ。", "shares": [ { "user": "misaki", "permission": "edit" } ] },
+    { "slug": "perm-sho-workspace", "workspace": "sample-shoji", "owner": "sho", "visibility": "workspace", "status": "active", "title": "翔のチーム共有メモ", "body": "サンプル商事の全員が読める権限検証用のメモ。合言葉はキキョウ。" },
+    { "slug": "perm-outsider-workspace", "workspace": "other-company", "owner": "outsider", "visibility": "workspace", "status": "active", "title": "別会社のチーム共有メモ", "body": "別会社の全員が読める権限検証用のメモ。合言葉はナデシコ。" }
+  ],
+  "relations": []
+}

@@ -1,0 +1,47 @@
+{
+  "scenario": "出張規程シナリオ（UC1）",
+  "notes": [
+    {
+      "slug": "travel-old",
+      "workspace": "sample-shoji",
+      "owner": "misaki",
+      "visibility": "workspace",
+      "status": "active",
+      "effective_from": "2023-04-01",
+      "title": "出張規程（2023年版）",
+      "body": "# 出張規程（2023年版）\n\n## 宿泊費\n国内出張の宿泊費の上限は1泊あたり10,000円とする。\n\n## 日当\n日帰り出張の日当は2,000円とする。"
+    },
+    {
+      "slug": "travel-new",
+      "workspace": "sample-shoji",
+      "owner": "misaki",
+      "visibility": "workspace",
+      "status": "active",
+      "effective_from": "2025-04-01",
+      "title": "出張規程 改定のお知らせ（2025年4月施行）",
+      "body": "# 出張規程 改定のお知らせ\n\n2025年4月1日より出張規程を改定します。\n\n## 宿泊費\n国内出張の宿泊費の上限を1泊あたり12,000円に引き上げます。\n\n## 日当\n日帰り出張の日当は2,000円のまま据え置きます。"
+    },
+    {
+      "slug": "travel-memo",
+      "workspace": "sample-shoji",
+      "owner": "kenta",
+      "visibility": "workspace",
+      "status": "active",
+      "title": "チャット転記メモ: 出張の宿泊費について",
+      "body": "総務チャンネルでの回答の転記。\n\n宿泊費は1泊13,000円までならOKとのこと（東京出張の場合）。"
+    },
+    {
+      "slug": "travel-exec",
+      "workspace": "sample-shoji",
+      "owner": "yuki",
+      "visibility": "private",
+      "status": "active",
+      "title": "役員向け出張規程",
+      "body": "# 役員向け出張規程\n\n## 宿泊費\n役員の国内出張の宿泊費の上限は1泊あたり25,000円とする。"
+    }
+  ],
+  "relations": [
+    { "from": "travel-new", "to": "travel-old", "type": "supersedes", "state": "confirmed", "proposed_by": "ai", "confidence": 0.92, "rationale": "2025年4月施行の改定で宿泊費の上限が変わっているため", "resolved_by": "misaki" },
+    { "from": "travel-memo", "to": "travel-new", "type": "contradicts", "state": "proposed", "proposed_by": "ai", "confidence": 0.81, "rationale": "宿泊費の上限額が食い違っている（13,000円と12,000円）" }
+  ]
+}

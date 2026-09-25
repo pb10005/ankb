@@ -22,7 +22,8 @@
     "lint": "eslint .",
     "test:e2e": "playwright test",
     "db:start": "supabase start",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "seed": "tsx src/seed/seed.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -35,10 +36,12 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.3",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.6",
+    "pg": "^8.23.0",
     "supabase": "^2.118.0",
     "tsx": "^4.23.15",
     "typescript": "~5.9",

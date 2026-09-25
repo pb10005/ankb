@@ -1,5 +1,5 @@
 # @covers AC-005
-# lint・型チェック・テスト（単体 + E2E）。どれか1つでも失敗すればジョブが失敗する。
+# lint・型チェック・テスト（単体 + DB結合 + E2E）。どれか1つでも失敗すればジョブが失敗する。
 name: ci
 
 on:
@@ -28,15 +28,16 @@ jobs:
       - name: typecheck
         run: npm run typecheck
 
-      - name: unit tests
-        run: npm test
-
       - name: start supabase
         run: |
           npx supabase start -x studio,imgproxy,vector,logflare,edge-runtime,realtime,storage-api,postgres-meta,supavisor,mailpit
           npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' > sb.env
           . ./sb.env
           printf 'NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_ANON_KEY=%s\n' "$API_URL" "$ANON_KEY" > .env.local
+
+      # 単体テストと DB 結合テスト（DB テストは fixtures を投入してから実行する）
+      - name: unit and db tests
+        run: npm test
 
       - name: install browser
         run: npx playwright install --with-deps chromium
