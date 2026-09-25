@@ -4,7 +4,7 @@
 -- 呼び出し者が所属する workspace のメンバーだけを返すビューを置く。関数ではなくビューにして
 -- SECURITY DEFINER 関数の許可リスト（AC-091）を増やさない。
 create view public.workspace_directory as
-select m.workspace_id, m.user_id, m.role,
+select m.workspace_id, m.user_id,
        coalesce(u.raw_user_meta_data ->> 'display_name', u.email) as display_name,
        u.email
 from public.member m

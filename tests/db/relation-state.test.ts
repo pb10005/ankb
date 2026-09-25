@@ -218,7 +218,7 @@ describe("閲覧できない相手の情報を漏らさない（§5.2-4）", () 
 });
 
 describe("状態遷移トリガーは version を上げない", () => {
-  it("AC-011: 承認で superseded になった A の version は承認前と同じ（編集中の利用者を CONFLICT にしない: AS-064）", async () => {
+  it("AS-064: 承認で superseded になった A の version は承認前と同じ（編集中の利用者を CONFLICT にしない）", async () => {
     const a = await createNote({ owner: "misaki" });
     const b = await createNote({ owner: "misaki" });
     const before = (await noteRow(a)).version;

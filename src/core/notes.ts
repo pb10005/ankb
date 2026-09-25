@@ -3,6 +3,7 @@
 // @assumption AS-051
 // @assumption AS-052
 // @assumption AS-062
+// @assumption AS-045
 // ノートの作成・取得・更新・共有。Web UI・API・サーバMCP はすべてこの関数を通す（指示書 §1.3）。
 // 権限の最終判定は DB の RLS とトリガー（schema-rls / relation-state）で行い、ここでは利用者向けのエラーに変換する。
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -27,8 +28,8 @@ export type Note = {
 export type NoteVersion = { version: number; title: string; body: string; created_at: string };
 export type Share = { user_id: string; permission: "view" | "edit" };
 
-export const TITLE_MAX = 200;
-export const BODY_MAX = 100_000;
+const TITLE_MAX = 200;
+const BODY_MAX = 100_000;
 export const TITLE_REQUIRED_MESSAGE = "タイトルを入力してください";
 export const CONFLICT_MESSAGE = "ほかの人が先に更新しました。再読み込みしてください";
 
@@ -82,10 +83,8 @@ export async function getNote(client: SupabaseClient, id: string): Promise<Resul
   return data ? ok(data as Note) : null;
 }
 
-export async function listNotes(client: SupabaseClient, opts: { includeArchived?: boolean } = {}): Promise<Note[]> {
-  let q = client.from("notes_visible").select("*").order("updated_at", { ascending: false });
-  if (!opts.includeArchived) q = q.neq("status", "archived");
-  const { data } = await q;
+export async function listNotes(client: SupabaseClient): Promise<Note[]> {
+  const { data } = await client.from("notes_visible").select("*").neq("status", "archived").order("updated_at", { ascending: false });
   return (data ?? []) as Note[];
 }
 
@@ -94,8 +93,8 @@ export async function canEdit(client: SupabaseClient, id: string): Promise<boole
   return data === true;
 }
 
-export const UPDATABLE_FIELDS = ["title", "body", "effective_from", "status", "visibility", "expected_version"] as const;
-export type UpdateInput = {
+const UPDATABLE_FIELDS = ["title", "body", "effective_from", "status", "visibility", "expected_version"] as const;
+type UpdateInput = {
   title?: string;
   body?: string;
   effective_from?: string | null;

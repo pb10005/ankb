@@ -23,7 +23,7 @@ out_of_scope:
 
 assumptions:
   - id: AS-009
-    statement: "UI上の visibility の表記は private=『非公開』、shared=『指定した人』、workspace=『チーム全体』とする。専門用語をUIに出さない（ペルソナA）"
+    statement: "UI上の visibility の表記は private=『非公開』、shared=『指定した人』、workspace=『チーム全体』とする。共有の権限の表記は view=『閲覧のみ』、edit=『編集できる』とする。専門用語をUIに出さない（ペルソナA）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -53,7 +53,7 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-062
-    statement: "ノート更新API は PATCH /api/notes/{id}（ログインセッションの cookie で認証）とし、200 / 400 VALIDATION_ERROR / 403 FORBIDDEN / 404 NOT_FOUND / 409 CONFLICT を返す。title・body・effective_from・status・visibility と expected_version 以外のフィールドを送ると 403 を返す。Web UI の保存とこのAPIは同じ updateNote 関数を通す"
+    statement: "ノート更新API は PATCH /api/notes/{id}（ログインセッションの cookie で認証）とし、200 / 400 VALIDATION_ERROR / 401 UNAUTHENTICATED（未ログイン）/ 403 FORBIDDEN / 404 NOT_FOUND / 409 CONFLICT を返す。title・body・effective_from・status・visibility と expected_version 以外のフィールドを送ると 403 を返す。Web UI の保存とこのAPIは同じ updateNote 関数を通す"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -73,8 +73,11 @@ acceptance:
     then: "ノート画面に『非公開』と『下書き』を表示する（DB 上は visibility=private / status=draft で保存）"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 画面の非公開/下書きバッジとDBの private/draft を両方検証。playwright passed
+    evidence: e2e/notes.spec.ts:7
 
   - id: AC-019
     kind: functional
@@ -83,8 +86,11 @@ acceptance:
     then: "健太のノート一覧にそのノートを表示する"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 変更前に健太一覧に無いこと、UIでチーム全体に変更後に健太のノート一覧に表示されることを検証。passed
+    evidence: e2e/notes.spec.ts:24
 
   - id: AC-020
     kind: functional
@@ -93,8 +99,11 @@ acceptance:
     then: "健太の画面に本文を表示し、編集ボタンは表示しない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: private->UIで閲覧のみ共有->健太画面に本文表示、編集link/buttonが0件を検証。passed
+    evidence: e2e/notes.spec.ts:41
 
   - id: AC-021
     kind: functional
@@ -103,8 +112,11 @@ acceptance:
     then: "403 を返し、ノートの本文は変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: view共有の健太がPATCH /api/notes/{id}で403、DBのbody不変を検証。passed
+    evidence: e2e/notes.spec.ts:57
 
   - id: AC-022
     kind: functional
@@ -113,8 +125,11 @@ acceptance:
     then: "編集前の本文を持つ版を日時付きで一覧に表示する"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: version1ノートをUIで編集保存後、版履歴に編集前の本文とtime要素(日付形式)1件を検証。passed
+    evidence: e2e/notes.spec.ts:80
 
   - id: AC-023
     kind: functional
@@ -123,8 +138,11 @@ acceptance:
     then: "『タイトルを入力してください』を表示し、ノートを保存しない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: alertの文言一致、URLが/notes/new のまま、DBに該当bodyの行0件を検証。passed
+    evidence: e2e/notes.spec.ts:96
 
   - id: AC-024
     kind: functional
@@ -133,8 +151,11 @@ acceptance:
     then: "status=archived に更新し、既定のノート一覧に表示しない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: アーカイブ押下でDB status=archived、既定一覧から消えることを検証(事前に表示されることも確認)。passed
+    evidence: e2e/notes.spec.ts:109
 
   - id: AC-025
     kind: functional
@@ -143,8 +164,11 @@ acceptance:
     then: "status=active に更新し、ノート画面の『下書き』表示を消す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 公開するボタン押下でDB status=active、下書きバッジ0件を検証。passed
+    evidence: e2e/notes.spec.ts:123
 
   - id: AC-026
     kind: functional
@@ -153,8 +177,11 @@ acceptance:
     then: "健太の画面には公開範囲と共有の設定ボタンを表示しない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: view/edit共有の両方で公開範囲region・変更ボタン・select・共有保存ボタンが0件を検証。passed
+    evidence: e2e/notes.spec.ts:135
 
   - id: AC-015
     kind: functional
@@ -163,8 +190,11 @@ acceptance:
     then: "更新前の body を持つ note_version の行が1件追加で保存される"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: sho(edit共有)のRLS経由更新で note_version が0->1件、version=1/body=更新前の本文 を検証。vitest 1 passed
+    evidence: tests/db/note-crud.test.ts:8
 
   - id: AC-130
     kind: functional
@@ -173,8 +203,11 @@ acceptance:
     then: "403 を返し、visibility と owner_id は変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: edit共有の健太が visibility=workspace / owner_id=健太 を個別送信し両方403、DBのvisibility/owner_id不変を検証。passed
+    evidence: e2e/notes.spec.ts:67
 
   - id: AC-131
     kind: functional
@@ -183,8 +216,11 @@ acceptance:
     then: "存在しない id を開いた場合と同じ 404 画面を表示する"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: 閲覧不可ノートと存在しないidがともに404、body innerTextが完全一致、タイトル非漏洩を検証。passed
+    evidence: e2e/notes.spec.ts:154
 
   - id: AC-132
     kind: functional
@@ -193,5 +229,8 @@ acceptance:
     then: "翔の画面に『ほかの人が先に更新しました。再読み込みしてください』を表示し、美咲の保存内容は変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: version=3を確認後、2人が編集画面を開き美咲保存->翔保存でalert文言一致、DB bodyが美咲の保存内容のままを検証。passed
+    evidence: e2e/notes.spec.ts:168
