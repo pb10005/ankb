@@ -1,28 +1,47 @@
 {
   "name": "ankb",
   "version": "0.1.0",
-  "description": "ankb — an AI-native knowledge base. Stores domain knowledge, plans and decisions in a form ready for later action. Backend: server-side MCP / Frontend: WebMCP",
+  "description": "ankb — an AI-native knowledge base. Assembles current, cited answers from scattered notes for humans, WebMCP agents and server-side MCP clients.",
   "type": "module",
   "private": true,
   "license": "MIT",
   "engines": {
-    "node": ">=22.5"
+    "node": ">=22.13"
   },
   "scripts": {
-    "test": "node --test --test-concurrency=1 --experimental-strip-types tests/*.test.ts",
-    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "next typegen && tsc --noEmit",
     "spec": "tsx scripts/spec-init.ts",
     "lint:spec": "tsx scripts/spec-lint.ts",
     "trace": "tsx scripts/trace-matrix.ts",
     "verdict": "tsx scripts/record-verdict.ts",
-    "gate": "tsx scripts/gate.ts"
+    "gate": "tsx scripts/gate.ts",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test:e2e": "playwright test",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "next": "^16.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.6",
+    "supabase": "^2.118.0",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "~5.9",
+    "vitest": "^5.0.2"
   }
 }

@@ -1,4 +1,5 @@
 name: conformance
+# 全要件の適合性ゲート。未実装のステップが残る間は UNCOVERED_AC で失敗する（ci ジョブとは独立）
 
 on:
   pull_request:
@@ -29,11 +30,6 @@ jobs:
       - name: traceability
         run: npx tsx scripts/trace-matrix.ts --base origin/${{ github.base_ref || 'main' }} --strict
 
-      - name: tests
-        run: npm test
-
-      - name: types
-        run: npx tsc --noEmit
 
       - name: report
         if: always()

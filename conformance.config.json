@@ -2,7 +2,8 @@
   "specDir": "specs",
   "srcDirs": [
     "src",
-    "tests"
+    "tests",
+    "e2e"
   ],
   "testFilePattern": "\\.(test|spec)\\.[cm]?[jt]sx?$",
   "ignore": [
