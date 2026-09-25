@@ -1,0 +1,45 @@
+name: conformance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 逆方向トレースに差分が必要
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # 要件そのものの健全性（曖昧語・観測不能なthen・異常系の不在）
+      - name: spec lint
+        run: npx tsx scripts/spec-lint.ts
+
+      # 順方向・逆方向・仮定のトレース。PR では --strict で
+      # 「どのACにも紐づかない変更」をエラー扱いにする。
+      - name: traceability
+        run: npx tsx scripts/trace-matrix.ts --base origin/${{ github.base_ref || 'main' }} --strict
+
+      - name: tests
+        run: npm test
+
+      - name: types
+        run: npx tsc --noEmit
+
+      - name: report
+        if: always()
+        run: npx tsx scripts/trace-matrix.ts --json > trace.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-matrix
+          path: trace.json

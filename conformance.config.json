@@ -1,0 +1,25 @@
+{
+  "specDir": "specs",
+  "srcDirs": [
+    "src",
+    "tests"
+  ],
+  "testFilePattern": "\\.(test|spec)\\.[cm]?[jt]sx?$",
+  "ignore": [
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    ".next",
+    "coverage"
+  ],
+  "baseRef": "origin/main",
+  "codeExtensions": [
+    "ts",
+    "tsx",
+    "js",
+    "jsx",
+    "mjs",
+    "cjs"
+  ]
+}

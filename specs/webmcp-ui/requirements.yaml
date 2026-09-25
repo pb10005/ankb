@@ -1,0 +1,151 @@
+# FEAT-002 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-002
+title: "WebMCPでエージェントに操作可能なナレッジベースUI"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+# 誰のどの困りごとを解くのか。1文。実装判断に迷った時の最終的な拠り所になる。
+intent: "人間がブラウザでankbを見ている最中に、ブラウザ内のAIエージェントへ『この決定に関連する未完了アクションを出して』と頼んでも、\
+  エージェントは画面をスクレイピングするしかなく、結果も人間の画面に反映されない。ankbのWebフロントエンドは、自身の操作をWebMCP\
+  （navigator.modelContext）のツールとして公開し、エージェントの検索・閲覧・作成が人間の見ている画面にそのまま表示されるようにする。\
+  書き込みは人間が画面上で承認するまで確定しない。"
+
+# 過剰実装を止める外周。draft を抜けるには最低1件必要。
+# 「やらないと決めたこと」であって「将来やること」ではない。
+out_of_scope:
+  - "フロントエンドフレームワーク（React/Vue/Svelte）とバンドラの導入。素のTypeScriptをNodeの型除去で配信可能なES Moduleとして書く（AS-010）"
+  - "WebMCPのポリフィル・独自拡張の同梱。navigator.modelContext が無いブラウザではエージェント向けツールを公開しない"
+  - "Markdownの書式付きエディタ・WYSIWYG・プレビュー。本文は textarea で編集し、表示はプレーンテキスト"
+  - "ログイン画面・ユーザー管理画面。ANKB_TOKEN 設定時はトークン入力欄に1度入力させ sessionStorage に保持するだけとする"
+  - "オフライン動作・Service Worker・楽観的更新のローカルキャッシュ"
+  - "モバイル専用レイアウト。幅360px以上で横スクロールが発生しないことだけを保証する"
+  - "英語UI・多言語化。UI文言は日本語のみ"
+  - "サーバ側MCPツール全8種の網羅的な公開。WebMCPで公開するのは AS-009 の5種のみ（関係付け・更新はUIからのみ操作）"
+
+# 確信が持てないまま進める判断。コード側に @assumption AS-001 を残して回収可能にする。
+# owner と resolve_by が無い仮決めは、誰も確定させないまま本番に入る。
+assumptions:
+  - id: AS-009
+    statement: "WebMCPで公開するツールは ankb_search / ankb_get_item / ankb_create_item / ankb_list_actions / ankb_complete_action の5種。\
+      各ツールは navigator.modelContext.registerTool({name, description, inputSchema, execute}) で登録し、execute はバックエンドの対応するMCPツール\
+      （kb_search 他）を呼んだ結果を {content:[{type:'text', text}]} で返す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-010
+    statement: "フロントエンドはバックエンドと同じNodeプロセスが GET / と GET /app/*.js で配信する。ブラウザからバックエンドへは fetch で POST /mcp に\
+      JSON-RPC（tools/call）を直接送り、MCP SDKのブラウザバンドルは使わない（AS-005 のJSONレスポンスモードに依存）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-011
+    statement: "エージェント由来の書き込み（ankb_create_item / ankb_complete_action）は、画面に確認ダイアログを表示し、人間が『承認』を押した時だけバックエンドへ送る。\
+      『却下』または60秒無操作の場合は送らず、ツール結果として isError とテキスト USER_REJECTED を返す。人間自身のUI操作による書き込みは確認しない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-012
+    statement: "E2Eテストは @playwright/test とプリインストール済みChromiumで行い、navigator.modelContext はテスト側で addInitScript により\
+      registerTool 呼び出しを記録するスタブを注入して検証する（実ブラウザのWebMCP実装の有無に依存しない）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+# 人間の判断が要る未決事項。frozen にするには空にする（確定させるか assumptions へ降格）。
+open_questions: []
+
+# 受入基準。ハッピーパスだけ書くと必ず後で破綻するので、異常系を必ず1件以上入れる。
+# then には外から観測できる結果を書く（返す/表示/保存/拒否…）。「対応する」「できる」は不可。
+acceptance:
+  - id: AC-016
+    kind: functional
+    given: "navigator.modelContext が存在するブラウザ"
+    when: "トップページ（GET /）を開く"
+    then: "registerTool に渡された name の集合が ankb_search / ankb_get_item / ankb_create_item / ankb_list_actions / ankb_complete_action の5つと一致する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-017
+    kind: functional
+    given: "navigator.modelContext が存在しないブラウザ"
+    when: "トップページを開いて検索欄に語を入力し検索する"
+    then: "検索結果の一覧を表示し、ヘッダに『WebMCP: 無効』を表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-018
+    kind: functional
+    given: "『認証』を本文に含む decision が保存され、トップページを開いた状態"
+    when: "エージェントが ankb_search を query='認証' で execute する"
+    then: "その decision の id と title を含むテキスト結果を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-019
+    kind: functional
+    given: "AC-018 と同じ状態"
+    when: "エージェントが ankb_search を query='認証' で execute する"
+    then: "画面の検索結果一覧にその decision の title を表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-020
+    kind: functional
+    given: "トップページを開いた状態"
+    when: "エージェントが ankb_create_item を execute し、人間が確認ダイアログで『承認』を押す"
+    then: "バックエンドにアイテムが保存され、ツール結果に新しい id を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-021
+    kind: functional
+    given: "トップページを開いた状態"
+    when: "エージェントが ankb_create_item を execute し、人間が確認ダイアログで『却下』を押す"
+    then: "ツール結果に isError と USER_REJECTED を返し、バックエンドのアイテム件数は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-022
+    kind: functional
+    given: "期限切れの未完了アクションを持つアイテムが保存され、トップページを開いた状態"
+    when: "アクション一覧パネルを表示する"
+    then: "そのアクションを期限切れを示す『期限切れ』ラベル付きで表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-023
+    kind: functional
+    given: "トップページを開いた後にバックエンドが停止した状態"
+    when: "エージェントが ankb_search を execute する"
+    then: "ツール結果に isError を返し、画面にエラーバナー『サーバに接続できません』を表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-024
+    kind: nfr
+    given: "幅360pxのビューポート"
+    when: "トップページを開く"
+    then: "document.documentElement.scrollWidth が 360px 以下である"
+    priority: should
+    verify: test
+    status: pending
+    attempts: 0

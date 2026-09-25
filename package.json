@@ -1,0 +1,28 @@
+{
+  "name": "ankb",
+  "version": "0.1.0",
+  "description": "ankb — an AI-native knowledge base. Stores domain knowledge, plans and decisions in a form ready for later action. Backend: server-side MCP / Frontend: WebMCP",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 --experimental-strip-types tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "spec": "tsx scripts/spec-init.ts",
+    "lint:spec": "tsx scripts/spec-lint.ts",
+    "trace": "tsx scripts/trace-matrix.ts",
+    "verdict": "tsx scripts/record-verdict.ts",
+    "gate": "tsx scripts/gate.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
