@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-003
 title: "ノートのCRUDとエディタ: 作成・編集・公開範囲・共有・版履歴"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "美咲と健太が自分用のメモとチームに共有するノートを1つの場所で書き分けられるように、ノートの作成・編集・公開範囲の切り替え・ユーザー単位の共有・版履歴の閲覧をWeb UIで提供する。3種類の visibility がUIから設定でき、設定どおりに他のユーザーからの見え方が変わることを完了とする。"
 

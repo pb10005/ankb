@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-007
 title: "サーバMCP: 外部エージェントがユーザー本人の権限で読み書きする"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "翔が Claude Code での実装中に仕様や設計判断を参照できるように、ankb を Streamable HTTP のMCPサーバとして公開する。外部エージェントはOAuthで得たユーザー本人のトークンで動き、Web UI と同じ検索関数・同じRLSを通る。承認・公開範囲の変更・削除はツールとして提供しない。"
 
@@ -44,16 +44,16 @@ assumptions:
     resolve_by: "2026-10-09"
   - id: AS-054
     statement: "ask はユーザーあたり1時間20回までとし、超えた場合は RATE_LIMITED を返す（LLM 利用料の暴走を防ぐ）。上限は環境変数 ANKB_ASK_RATE_LIMIT で変更できる"
-    status: assumed
+    status: confirmed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-059
+    statement: "OAuth 経由で発行されたトークンを JWT クレーム client_id で識別し、resolve_relation・visibility の変更・note_share と member の書き込みを DB 側（RLS / RPC）で拒否する。Supabase Auth の OAuth 2.1 サーバが Claude Code の接続に必要な動的クライアント登録に対応していない場合は、ankb 自身が MCP 用の OAuth 認可エンドポイントを持ち、Supabase の JWT を client_id クレーム付きで発行し直す（OQ-003 を 2026-09-25 に人間が承認。§0 の権限に関わる変更）"
+    status: confirmed
+    owner: pb10005
+    resolve_by: "2026-09-25"
 
-open_questions:
-  - id: OQ-003
-    question: "外部エージェントが OAuth トークンで Supabase を直接叩けば、MCP にツールが無くても承認・公開範囲の変更ができてしまう。OAuth 経由のトークンを JWT クレーム（client_id）で識別し、resolve_relation・visibility・note_share・member の書き込みを DB 側で拒否してよいか（§0: 権限に関わる変更のため承認が必要）。あわせて、Supabase Auth の OAuth 2.1 サーバが Claude Code の接続に必要な動的クライアント登録に対応していない場合の代替"
-    default: "クレームで識別して DB 側で拒否する。Supabase の OAuth サーバで接続できない場合は、ankb 自身が MCP 用の OAuth 認可エンドポイントを持ち、Supabase の JWT を client_id クレーム付きで発行し直す"
-    raised: "2026-09-25"
-    status: open
+open_questions: []
 
 acceptance:
   - id: AC-060

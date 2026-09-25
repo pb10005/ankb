@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-002
 title: "スキーマとRLS: ノートの閲覧・編集権限をDBで強制する"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "権限と有効性の判定を入口ごとの実装に任せると、Web UI・サーバMCP・WebMCP のどれか1つの抜けが情報漏洩になる。§4 のテーブルと §5 の権限モデルを Postgres の RLS とトリガーで強制し、どの入口から読んでも閲覧できないノートが1行も返らず、superseded への遷移が承認経由でしか起きない状態を作る。"
 

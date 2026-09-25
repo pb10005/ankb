@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-010
 title: "回答UIと経緯の再構成: 引用・旧情報・矛盾を画面で区別し、決定の経緯を時系列で示す"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "健太が『なぜそう決めたか』をたどれるように、経緯を問う質問には関連ノートを日付順に並べて判断が変わった時点を示し、美咲が回答の根拠をワンクリックで確かめられるように、Web UI に引用・旧情報・矛盾を区別して表示する。回答の契約（FEAT-005）の上に乗る表示と形式の要件を扱う。"
 

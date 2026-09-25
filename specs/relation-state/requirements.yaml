@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-009
 title: "ノートの状態遷移: superseded は承認経由でしか起きず、見えない相手の情報を漏らさない"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "『どれが今有効か』の判定は ankb の価値の中核であり、superseded への遷移が承認以外の経路で起きれば、旧情報を現行として回答する事故に直結する。note_relation と notes の状態遷移を DB のトリガーと RPC に閉じ込め、承認・取り消し・多重の置き換え・循環を決定的に扱い、閲覧できない置き換え先の id を列の値から漏らさないようにする。"
 

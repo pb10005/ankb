@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-006
 title: "置き換え関係の推定と承認: AIが推定し人がワンクリックで承認する"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "どれが今有効かの判定を人手の整理に頼ると更新されない。ノートを有効にした時点でAIが置き換え・矛盾の候補を推定して提案し、両方のノートの編集権限を持つ人間がワンクリックで承認・却下できるようにする。承認だけが superseded への唯一の経路であり、エージェントは提案まではできても承認はできない。"
 

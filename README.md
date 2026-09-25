@@ -12,17 +12,17 @@
 
 | ステップ | 仕様 | ID | 状態 |
 |---|---|---|---|
-| 1 雛形 | [`specs/foundation`](specs/foundation/requirements.yaml) | FEAT-001 | draft |
-| 2 スキーマとRLS（権限） | [`specs/schema-rls`](specs/schema-rls/requirements.yaml) | FEAT-002 | draft |
-| 2 スキーマとRLS（状態遷移） | [`specs/relation-state`](specs/relation-state/requirements.yaml) | FEAT-009 | draft |
-| 3 ノートのCRUD | [`specs/note-crud`](specs/note-crud/requirements.yaml) | FEAT-003 | draft |
-| 4 検索パイプライン | [`specs/search-pipeline`](specs/search-pipeline/requirements.yaml) | FEAT-004 | draft |
-| 5 回答の契約（ask） | [`specs/answer-synthesis`](specs/answer-synthesis/requirements.yaml) | FEAT-005 | draft |
-| 5 回答UIと経緯 | [`specs/answer-experience`](specs/answer-experience/requirements.yaml) | FEAT-010 | draft |
-| 6 置き換えの推定と承認 | [`specs/relation-inference`](specs/relation-inference/requirements.yaml) | FEAT-006 | draft |
-| 7 サーバMCP | [`specs/server-mcp`](specs/server-mcp/requirements.yaml) | FEAT-007 | draft |
-| 8 WebMCP | [`specs/webmcp`](specs/webmcp/requirements.yaml) | FEAT-008 | draft |
-| 8 WebMCP（承認フロー） | [`specs/webmcp-approval`](specs/webmcp-approval/requirements.yaml) | FEAT-011 | draft |
+| 1 雛形 | [`specs/foundation`](specs/foundation/requirements.yaml) | FEAT-001 | frozen |
+| 2 スキーマとRLS（権限） | [`specs/schema-rls`](specs/schema-rls/requirements.yaml) | FEAT-002 | frozen |
+| 2 スキーマとRLS（状態遷移） | [`specs/relation-state`](specs/relation-state/requirements.yaml) | FEAT-009 | frozen |
+| 3 ノートのCRUD | [`specs/note-crud`](specs/note-crud/requirements.yaml) | FEAT-003 | frozen |
+| 4 検索パイプライン | [`specs/search-pipeline`](specs/search-pipeline/requirements.yaml) | FEAT-004 | frozen |
+| 5 回答の契約（ask） | [`specs/answer-synthesis`](specs/answer-synthesis/requirements.yaml) | FEAT-005 | frozen |
+| 5 回答UIと経緯 | [`specs/answer-experience`](specs/answer-experience/requirements.yaml) | FEAT-010 | frozen |
+| 6 置き換えの推定と承認 | [`specs/relation-inference`](specs/relation-inference/requirements.yaml) | FEAT-006 | frozen |
+| 7 サーバMCP | [`specs/server-mcp`](specs/server-mcp/requirements.yaml) | FEAT-007 | frozen |
+| 8 WebMCP | [`specs/webmcp`](specs/webmcp/requirements.yaml) | FEAT-008 | frozen |
+| 8 WebMCP（承認フロー） | [`specs/webmcp-approval`](specs/webmcp-approval/requirements.yaml) | FEAT-011 | frozen |
 
 ## 開発プロセス
 

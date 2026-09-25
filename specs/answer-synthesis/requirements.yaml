@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-005
 title: "サーバ合成 ask: 回答の契約をサーバ側で強制する"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "散らばった断片から、今有効な答えを根拠付きで組み立てる（§1.2）。サーバが検索パイプラインの結果だけを材料に Claude で回答を合成し、すべての主張に根拠ノートを付け、旧情報・矛盾・更新の可能性を区別して返す。美咲が回答の正しさを自分で判断できなくても、どれが現行でどこに書いてあるかが画面で分かる状態を作る。"
 
@@ -19,7 +19,7 @@ out_of_scope:
   - "回答の会話履歴（追質問の文脈保持）。1質問1回答とする"
   - "回答のストリーミング表示"
   - "回答へのフィードバック（良い／悪い）の収集"
-  - "BYO（利用者持ち込み）APIキー。v1 はサーバ運用者の ANTHROPIC_API_KEY を使う（OQ-002）"
+  - "BYO（利用者持ち込み）APIキー。v1 はサーバ運用者の ANTHROPIC_API_KEY を使う（AS-058）"
 
 assumptions:
   - id: AS-017
@@ -42,13 +42,13 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-058
+    statement: "embedding は Voyage AI の多言語モデルを使う。LLM（Anthropic API）と embedding の利用料はサーバ運用者の API キー（ANTHROPIC_API_KEY / VOYAGE_API_KEY）で負担し、BYO キーは v1 で扱わない。ask にはユーザーあたりの回数上限を設ける（FEAT-007 AS-054）（OQ-002 を 2026-09-25 に既定案で確定）"
+    status: confirmed
+    owner: pb10005
+    resolve_by: "2026-09-25"
 
-open_questions:
-  - id: OQ-002
-    question: "指示書は pgvector を使うが Anthropic API には embedding が無い。embedding の提供元と、ask の LLM 利用料の負担（指示書 §12）をどうするか"
-    default: "embedding は Voyage AI の多言語モデル、LLM と embedding の料金はサーバ運用者のAPIキーで負担し BYO キーは v1 で扱わない"
-    raised: "2026-09-25"
-    status: open
+open_questions: []
 
 acceptance:
   - id: AC-037

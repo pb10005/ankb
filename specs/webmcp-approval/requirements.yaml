@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-011
 title: "WebMCP の承認フロー: エージェントはダイアログを開くまで、確定は人間のクリックだけ"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "ブラウザ内エージェントは承認ダイアログを開けても、置き換え関係を確定できてはならない（§2.2 D、§6.2）。request_relation_approval が開いたダイアログは、人間の実際のクリックでだけ確定し、権限の無い提案・保留・中断・遷移のいずれでも提案の状態を変えない。"
 

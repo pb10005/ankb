@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-001
 title: "雛形: Next.js + Supabase の認証とCI"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "ankb の全機能（Web UI・サーバMCP・WebMCP）が乗る土台として、Next.js（App Router）と Supabase Auth によるログインと、lint・型チェック・テストを回すCIを用意する。ログインしたユーザーだけがダッシュボードに到達できる状態を完了とする。"
 
@@ -19,6 +19,7 @@ out_of_scope:
   - "ソーシャルログイン・SSO・多要素認証"
   - "パスワードリセット・メールアドレス変更の画面"
   - "workspace の作成・招待・メンバー管理の画面。v1 の workspace とメンバーはシードスクリプトで投入する（AS-003）"
+  - "ノートへの次アクション・期限・見直し日の構造化フィールド（AS-057）"
 
 assumptions:
   - id: AS-001
@@ -41,13 +42,13 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-057
+    statement: "当初の依頼にあった『のちのアクションに活用できる形で保管する』（ノートの次アクション・期限・見直し日の構造化）は v1 では扱わない。指示書 docs/instructions.md に従う（OQ-001 を 2026-09-25 に既定案で確定）"
+    status: confirmed
+    owner: pb10005
+    resolve_by: "2026-09-25"
 
-open_questions:
-  - id: OQ-001
-    question: "当初の依頼にあった『のちのアクションに活用できる形で保管する』（ノートに次アクション・期限・見直し日を持たせる）は指示書に無い。v1 から外してよいか"
-    default: "指示書に従い v1 では扱わない（全スペックの out_of_scope 相当）"
-    raised: "2026-09-25"
-    status: open
+open_questions: []
 
 acceptance:
   - id: AC-001

@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-004
 title: "検索パイプライン: ハイブリッド検索と有効性の解決 resolveCurrent()"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "同じテーマのノートが複数あるとどれが今有効か判別できない、という課題（§1.1）に対し、全入口で共通の検索関数が、ベクトル検索と全文検索の結果から置き換え済みのノートを本流から外し、旧情報・矛盾・更新の可能性を区別した SearchResult を返すようにする。検索は常に質問者のRLS下で実行する。"
 

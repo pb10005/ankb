@@ -6,7 +6,7 @@
 # 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
 id: FEAT-008
 title: "WebMCP: ブラウザ内エージェントが画面の文脈を共有してUIを操作する"
-status: draft # draft -> (spec-lint --gate freeze) -> frozen
+status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
 intent: "美咲がノートを開いたまま『これって最新？』と聞けるように、ankb のWebページ自身が document.modelContext（WebMCP）にツールを登録し、ブラウザ内エージェントが画面の文脈（開いているノート・検索クエリ・選択範囲）を取得し、ノートや比較ビューを開き、引用をハイライトできるようにする。確定操作（承認・保存）は必ず人間のクリックを経由する。"
 
