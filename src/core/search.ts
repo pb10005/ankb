@@ -129,6 +129,17 @@ export async function searchKnowledge(client: SupabaseClient, query: string, dep
       .or(`from_note_id.in.(${noteIds.join(",")}),to_note_id.in.(${noteIds.join(",")})`),
   ]);
   const meta = new Map((notes as NoteMeta[] | null ?? []).map((n) => [n.id, n]));
+  // contradicts の相手側が hits に無い場合も、両端が active かどうかを判定するためにメタデータを引く
+  const missing = [
+    ...new Set(((relations as RelationRow[] | null) ?? []).flatMap((r) => [r.from_note_id, r.to_note_id]).filter((id) => !meta.has(id))),
+  ];
+  if (missing.length > 0) {
+    const { data: extra } = await client
+      .from("notes_visible")
+      .select("id, title, status, owner_id, superseded_by, effective_from, updated_at")
+      .in("id", missing);
+    for (const n of (extra as NoteMeta[] | null) ?? []) meta.set(n.id, n);
+  }
   return resolveCurrent([...fused.values()], meta, (relations as RelationRow[] | null) ?? []);
 }
 
@@ -136,7 +147,7 @@ export async function searchKnowledge(client: SupabaseClient, query: string, dep
  * 有効性の解決（指示書 §6.1 resolveCurrent）
  * - superseded のノートは本流から外し superseded_context へ（置き換え先を閲覧できなければ superseded_by を付けない）
  * - proposed の supersedes の置き換え対象には possibly_outdated=true
- * - active なノートに contradicts（proposed / confirmed）があれば conflicts に入れる
+ * - 両端が active なノートどうしの contradicts（proposed / confirmed）を conflicts に入れる（§6.1「active なノートが複数」）
  */
 export function resolveCurrent(
   fused: { row: ChunkRow; score: number }[],
@@ -180,6 +191,7 @@ export function resolveCurrent(
   const conflicts: Conflict[] = [];
   for (const r of relations) {
     if (r.type !== "contradicts" || !(activeIds.has(r.from_note_id) || activeIds.has(r.to_note_id))) continue;
+    if (meta.get(r.from_note_id)?.status !== "active" || meta.get(r.to_note_id)?.status !== "active") continue;
     const key = [r.from_note_id, r.to_note_id].sort().join("|");
     if (seen.has(key)) continue;
     seen.add(key);

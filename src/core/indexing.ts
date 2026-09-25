@@ -1,4 +1,4 @@
-// @covers AC-027, AC-033, AC-090
+// @covers AC-027, AC-033
 // @assumption AS-012
 // @assumption AS-040
 // ノートの保存時にチャンクと embedding を作り直す（編集者の権限で書く: AS-041）。

@@ -195,3 +195,17 @@ describe("非機能", () => {
 });
 
 void share;
+
+describe("conflicts は両端が active のときだけ", () => {
+  it("AC-029: contradicts の相手が superseded のときは conflicts に入れない（§6.1）", async () => {
+    const token = uniq("旧版との矛盾");
+    const a = await createNote({ owner: "misaki", title: `${token} 現行`, body: `${token} は1万円` });
+    const b = await createNote({ owner: "misaki", title: `${token} 旧版`, body: `${token} は2万円` });
+    const c = await createNote({ owner: "misaki", title: `${token} 新版`, body: `${token} の新版` });
+    await relate(a, b, "contradicts");
+    await relate(c, b, "supersedes", "confirmed");
+    for (const id of [a, b, c]) await indexNote(id);
+    const r = await searchAs("misaki", token);
+    expect(r.conflicts.filter((x) => x.note_ids.includes(a) && x.note_ids.includes(b))).toEqual([]);
+  });
+});

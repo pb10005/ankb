@@ -5,6 +5,8 @@
 // @assumption AS-052
 // @assumption AS-062
 // @assumption AS-045
+// @assumption AS-012
+// @assumption AS-040
 // ノートの作成・取得・更新・共有。Web UI・API・サーバMCP はすべてこの関数を通す（指示書 §1.3）。
 // 権限の最終判定は DB の RLS とトリガー（schema-rls / relation-state）で行い、ここでは利用者向けのエラーに変換する。
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -75,7 +77,7 @@ export async function createNote(
     .insert({ id, workspace_id: input.workspace_id, owner_id: uid, title: input.title, body: input.body });
   if (error) return fail("FORBIDDEN", "このワークスペースにはノートを作成できません");
   const created = await getNote(client, id);
-  if (created?.ok) await reindexNote(client, created.value);
+  if (created?.ok) await safeReindex(client, created.value);
   return created ?? fail("NOT_FOUND", "ノートが見つかりません");
 }
 
@@ -149,8 +151,17 @@ export async function updateNote(client: SupabaseClient, id: string, raw: Record
   }
   if (count === 0) return fail("CONFLICT", CONFLICT_MESSAGE);
   const updated = await getNote(client, id);
-  if (updated?.ok && (patch.title !== undefined || patch.body !== undefined)) await reindexNote(client, updated.value);
+  if (updated?.ok && (patch.title !== undefined || patch.body !== undefined)) await safeReindex(client, updated.value);
   return updated ?? fail("NOT_FOUND", "ノートが見つかりません");
+}
+
+/** 検索用チャンクの再作成。失敗してもノートの保存は成功させる（AS-040） */
+async function safeReindex(client: SupabaseClient, note: Note): Promise<void> {
+  try {
+    await reindexNote(client, note);
+  } catch (e) {
+    console.error(`[ankb] ノート ${note.id} の検索インデックス更新に失敗:`, e);
+  }
 }
 
 export async function listVersions(client: SupabaseClient, id: string): Promise<NoteVersion[]> {
