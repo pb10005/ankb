@@ -8,7 +8,9 @@ id: FEAT-004
 title: "検索パイプライン: ハイブリッド検索と有効性の解決 resolveCurrent()"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "同じテーマのノートが複数あるとどれが今有効か判別できない、という課題（§1.1）に対し、全入口で共通の検索関数が、ベクトル検索と全文検索の結果から置き換え済みのノートを本流から外し、旧情報・矛盾・更新の可能性を区別した SearchResult を返すようにする。検索は常に質問者のRLS下で実行する。"
+intent: "同じテーマのノートが複数あるとどれが今有効か判別できない、という課題（§1.1）に対し、全入口で共通の検索関数が、ベクトル検索と全文検索の結\
+  果から置き換え済みのノートを本流から外し、旧情報・矛盾・更新の可能性を区別した SearchResult
+  を返すようにする。検索は常に質問者のRLS下で実行する。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -22,47 +24,60 @@ out_of_scope:
 
 assumptions:
   - id: AS-011
-    statement: "日本語全文検索は PGroonga を採用する。Supabase が公式に提供する拡張であり、日本語の2文字語を分かち書き無しで検索できる。pg_bigm は Supabase のホスト環境で利用可能であることを確認できていないため採用しない（指示書 §12 のエンジニアリング判断）"
+    statement: "日本語全文検索は PGroonga を採用する。Supabase
+      が公式に提供する拡張であり、日本語の2文字語を分かち書き無しで検索できる。pg_bigm は Supabase
+      のホスト環境で利用可能であることを確認できていないため採用しない（指示書 §12 のエンジニアリング判断）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-012
-    statement: "チャンク化は見出し単位で分割し、1チャンク最大800文字・前後100文字の重なりを持たせる。チャンクと embedding はノートの保存時に同期的に作り直す"
+    statement: "チャンク化は見出し単位で分割し、1チャンク最大800文字・前後100文字の重なりを持たせる。チャンクと embedding
+      はノートの保存時に同期的に作り直す"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-013
-    statement: "ハイブリッド検索の統合は Reciprocal Rank Fusion（k=60）とし、再ランキングは RRF スコア順に effective_from・updated_at が新しいものを同点時に優先する。LLM による再ランキングは行わない"
+    statement: "ハイブリッド検索の統合は Reciprocal Rank Fusion（k=60）とし、再ランキングは RRF スコア順に
+      effective_from・updated_at が新しいものを同点時に優先する。LLM による再ランキングは行わない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-014
-    statement: "検索の本体は1つの TypeScript 関数 searchKnowledge(client, query) とし、Web UI の API・サーバMCP・WebMCP のすべてがこれを呼ぶ。client は質問者のJWTで作った Supabase クライアントで、サービスロールキーは使わない"
+    statement: "検索の本体は1つの TypeScript 関数 searchKnowledge(client, query) とし、Web UI の
+      API・サーバMCP・WebMCP のすべてがこれを呼ぶ。client は質問者のJWTで作った Supabase
+      クライアントで、サービスロールキーは使わない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-015
-    statement: "conflicts の『同じテーマ』は contradicts 関係（confirmed または proposed）で直接結ばれていることと定義し、テーマの自動推定は行わない"
+    statement: "conflicts の『同じテーマ』は contradicts 関係（confirmed または
+      proposed）で直接結ばれていることと定義し、テーマの自動推定は行わない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-016
-    statement: "CI の自動テストでは LLM と embedding の呼び出しを決定的なスタブに差し替える。実APIを使う評価テスト（AC-034、FEAT-005 の評価セット）は API キーがある環境でだけ実行する"
+    statement: "CI の自動テストでは LLM と embedding
+      の呼び出しを決定的なスタブに差し替える。実APIを使う評価テスト（AC-034、FEAT-005 の評価セット）は API
+      キーがある環境でだけ実行する"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-037
-    statement: "possibly_outdated と conflicts は、関係の両端のノートを質問者が閲覧できる場合だけ立てる（§5.2-4）。置き換え先が見えない superseded だけは『より新しい版がある可能性』として superseded_context に残す（§6.1）"
+    statement: "possibly_outdated と conflicts
+      は、関係の両端のノートを質問者が閲覧できる場合だけ立てる（§5.2-4）。置き換え先が見えない superseded
+      だけは『より新しい版がある可能性』として superseded_context に残す（§6.1）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-039
-    statement: "archived のノートは検索結果（hits / superseded_context）に含めない。クエリ展開の LLM 呼び出しは3秒でタイムアウトし、元のクエリだけで検索を続ける"
+    statement: "archived のノートは検索結果（hits / superseded_context）に含めない。クエリ展開の LLM
+      呼び出しは3秒でタイムアウトし、元のクエリだけで検索を続ける"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-040
-    statement: "保存時の embedding 生成に失敗した場合もノートの保存は成功させ、chunk は embedding=null で保存して全文検索の対象にする。embedding はバックグラウンドジョブが補完する"
+    statement: "保存時の embedding 生成に失敗した場合もノートの保存は成功させ、chunk は embedding=null
+      で保存して全文検索の対象にする。embedding はバックグラウンドジョブが補完する"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -72,22 +87,33 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-068
-    statement: "VOYAGE_API_KEY が無い環境（開発・CI）では、文字バイグラムのハッシュで作る決定的なスタブ embedding（1024次元）を使う。意味検索の品質は無く、ベクトル検索の経路と権限を検証するためだけに使う。本番では VOYAGE_API_KEY を必須とする"
+    statement: "VOYAGE_API_KEY が無い環境（開発・CI）では、文字バイグラムのハッシュで作る決定的なスタブ
+      embedding（1024次元）を使う。意味検索の品質は無く、ベクトル検索の経路と権限を検証するためだけに使う。本番では
+      VOYAGE_API_KEY を必須とする"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-069
-    statement: "クエリ展開は claude-opus-5（環境変数 ANKB_QUERY_EXPANSION_MODEL で変更可）を effort=low・構造化出力（json_schema）で呼び、元の質問に最大3件の言い換えを加える。拒否に備えて server-side fallback（fallbacks: default）を付ける。ANTHROPIC_API_KEY が無い環境では展開しない"
+    statement: "クエリ展開は claude-opus-5（環境変数 ANKB_QUERY_EXPANSION_MODEL で変更可）を
+      effort=low・構造化出力（json_schema）で呼び、元の質問に最大3件の言い換えを加える。拒否に備えて server-side
+      fallback（fallbacks: default）を付ける。ANTHROPIC_API_KEY が無い環境では展開しない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-070
-    statement: "ベクトル検索はコサイン類似度 0.3 以上のチャンクだけを候補にする（環境変数 ANKB_VECTOR_MIN_SIMILARITY で変更可）。近傍検索は質問と無関係なチャンクも上位件数まで必ず返し、無関係なノートの矛盾・旧情報が結果に混ざるため"
+    statement: "ベクトル検索はコサイン類似度 0.3 以上のチャンクだけを候補にする（環境変数 ANKB_VECTOR_MIN_SIMILARITY
+      で変更可）。近傍検索は質問と無関係なチャンクも上位件数まで必ず返し、無関係なノートの矛盾・旧情報が結果に混ざるため"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
 
-open_questions: []
+open_questions:
+  - id: OQ-001
+    from: AC-034
+    question: "AC-034 は実装側で判定不能: 評価テストは存在するが VOYAGE_API_KEY がこの環境に無く実行不能（テストは key
+      無しで throw）。キーのある環境で npx vitest run --project eval の実行結果が必要"
+    raised: 2026-09-25
+    status: open
 
 acceptance:
   - id: AC-027
@@ -97,18 +123,28 @@ acceptance:
     then: "旧規程を hits に含めず、superseded_context に superseded_by=改定通知の id 付きで返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "旧規程が hits に無い・superseded_context に status=superseded,
+      superseded_by=travel-new を検証。npx vitest run --project db
+      tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:16
 
   - id: AC-028
     kind: functional
     given: "置き換え先ノートが美咲から閲覧できない superseded のノート"
     when: "美咲がそのノートに該当する語で検索する"
-    then: "そのノートを superseded_context に superseded_by 無しで返す。シリアライズした結果の文字列は置き換え先の id・タイトルを含まない"
+    then: "そのノートを superseded_context に superseded_by 無しで返す。シリアライズした結果の文字列は置き換え先の
+      id・タイトルを含まない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "superseded_by プロパティ無し、JSON.stringify に置き換え先 id・タイトル無しを検証。npx vitest run
+      --project db tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:26
 
   - id: AC-029
     kind: functional
@@ -117,8 +153,12 @@ acceptance:
     then: "conflicts に2件の note_id と relation_state=proposed を含む結果を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "conflicts に両 id と relation_state=proposed を検証。npx vitest run --project db
+      tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:43
 
   - id: AC-030
     kind: functional
@@ -127,8 +167,12 @@ acceptance:
     then: "そのノートの hit に possibly_outdated=true を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "置き換え対象 possibly_outdated=true（置き換え元は false）を検証。npx vitest run --project
+      db tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:56
 
   - id: AC-031
     kind: functional
@@ -137,8 +181,12 @@ acceptance:
     then: "美咲自身の draft だけを含み、健太の draft を含まない結果を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "hits+superseded_context に自分の draft を含み健太の workspace draft を含まないことを検証。npx
+      vitest run --project db tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:83
 
   - id: AC-032
     kind: functional
@@ -147,8 +195,12 @@ acceptance:
     then: "閲覧できないノートの id・title・本文断片のいずれも、シリアライズした SearchResult の文字列に含まない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "5ユーザー×3クエリで不可視ノートの id・title・本文断片（合言葉/金額）が JSON に無いことを検証。可視性は fixtures
+      から独立計算。npx vitest run --project db tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:95
 
   - id: AC-033
     kind: functional
@@ -157,8 +209,12 @@ acceptance:
     then: "そのノートを hits に含む結果を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "『宿泊』で travel-new（本文に宿泊費）が hits に含まれることを検証。npx vitest run --project db
+      tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:127
 
   - id: AC-034
     kind: functional
@@ -167,8 +223,12 @@ acceptance:
     then: "そのノートを hits の上位5件以内に含む結果を返す"
     priority: should
     verify: test
-    status: pending
+    status: blocked
     attempts: 0
+    verified_at: 2026-09-25
+    note: 評価テストは存在するが VOYAGE_API_KEY がこの環境に無く実行不能（テストは key 無しで throw）。キーのある環境で npx
+      vitest run --project eval の実行結果が必要
+    evidence: tests/eval/search-eval.test.ts:14
 
   - id: AC-035
     kind: functional
@@ -177,8 +237,12 @@ acceptance:
     then: "元のクエリだけでハイブリッド検索した結果を返し、エラーにしない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "reject する expander で結果が非空かつ展開無しの baseline と完全一致を検証。npx vitest run
+      --project db tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:132
 
   - id: AC-036
     kind: nfr
@@ -187,8 +251,13 @@ acceptance:
     then: "p95 応答時間が 800ms 以下である"
     priority: should
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "1000件追加投入・Noop expander で100回検索、実測 p95=101.3ms p50=86.1ms（<=800ms）。ローカル
+      Docker Supabase で計測。npx vitest run --project db tests/db/search.test.ts:
+      12/12 passed"
+    evidence: tests/db/search.test.ts:167
 
   - id: AC-100
     kind: functional
@@ -197,8 +266,13 @@ acceptance:
     then: "健太が閲覧できないノートの chunk を0件返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "健太のJWT(supabase-js rpc=/rest/v1/rpc)で search_chunks_fts /
+      search_chunks_vector を直接呼び、結果非空かつ不可視ノートの chunk 0件を検証。npx vitest run
+      --project db tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:110
 
   - id: AC-101
     kind: functional
@@ -207,25 +281,41 @@ acceptance:
     then: "src/jobs/ 配下以外のファイルを0件返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "npx vitest run --project unit tests/repo-scan.test.ts: 1/1 passed。grep
+      でも該当はspec と走査テスト自身のみ"
+    evidence: tests/repo-scan.test.ts:23
 
   - id: AC-102
     kind: functional
-    given: "美咲から見える active なノート A と、見えない B の間に contradicts と B→A の proposed supersedes がある"
+    given: "美咲から見える active なノート A と、見えない B の間に contradicts と B→A の proposed
+      supersedes がある"
     when: "美咲が A に該当する語で検索する"
     then: "conflicts が空で、A の possibly_outdated=false の結果を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "不可視 B との contradicts + B->A proposed supersedes で conflicts=[] と A の
+      possibly_outdated=false を検証。npx vitest run --project db
+      tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:68
 
   - id: AC-103
     kind: functional
     given: "権限シナリオ"
     when: "各ユーザーで同じクエリを、そのユーザーが閲覧できないノートと付随する chunk・relation を削除する前と後で検索する（差分テスト）"
-    then: "2つの SearchResult の hits / superseded_context / conflicts が一致する（AC-028 の表示を除く）"
+    then: "2つの SearchResult の hits / superseded_context / conflicts が一致する（AC-028
+      の表示を除く）"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-25
+    note: "misaki/kenta/sho(+outsider)×3クエリで不可視ノートと relation 削除前後の
+      hits/superseded_context/conflicts 完全一致を検証。yuki は対象外（権限シナリオの3ユーザーは網羅）。npx
+      vitest run --project db tests/db/search.test.ts: 12/12 passed"
+    evidence: tests/db/search.test.ts:142
