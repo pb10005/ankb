@@ -10,8 +10,8 @@ status: draft # draft -> (spec-lint --gate freeze) -> frozen
 # 誰のどの困りごとを解くのか。1文。実装判断に迷った時の最終的な拠り所になる。
 intent: "ドメイン知識・計画書・決定事項は、Wikiやドキュメントに文章として置かれた時点で『次に何をするか』『なぜそう決めたか』『いつ見直すか』が本文に埋もれ、\
   後から人間もAIエージェントも行動に移せない。ankbはこれらを、次アクション・見直し期日・根拠・アイテム間の関係を構造化フィールドとして持つ形で保管し、\
-  サーバサイドMCPのツールとして公開することで、MCPクライアント（Claude等のエージェント）が『未完了アクションの一覧』『見直し期限を過ぎた決定』\
-  『この決定を置き換えた新しい決定』を問い合わせだけで引き出せるようにする。"
+  サーバサイドMCPのツールとして公開する。本機能（FEAT-001）はその土台として、アイテムの保存・取得・更新・検索と、MCPエンドポイントの認証・永続化を扱う。\
+  アクション・見直し期日・決定の置き換えを問い合わせるツールは FEAT-003 で扱う。"
 
 # 過剰実装を止める外周。draft を抜けるには最低1件必要。
 # 「やらないと決めたこと」であって「将来やること」ではない。
@@ -19,12 +19,13 @@ out_of_scope:
   - "埋め込みベクトルによる意味検索・RAG。検索はSQLite FTS5の全文検索とフィルタに限定する"
   - "サーバ内部からのLLM呼び出し（要約・自動分類・自動タグ付け・アクション自動抽出）。知能はMCPクライアント側に置き、サーバは決定論的な保管・検索・整合性検査だけを担う（AS-003）"
   - "複数ユーザー・テナント分離・アイテム単位の権限管理。単一ユーザー（単一チーム共有の1トークン）を前提とする（AS-004）"
-  - "アイテムの物理削除。削除はアーカイブ（status変更による論理削除）のみとする"
+  - "アイテムの物理削除。削除はアーカイブ（status=archived による論理削除）のみとする"
   - "アイテムの変更履歴の閲覧・差分表示・過去版への巻き戻し。保持するのは現在版と version 番号のみ"
   - "ファイル添付・画像の保存。本文はMarkdownテキストのみ"
   - "外部サービス（Notion/Confluence/Google Docs/Linear）からのインポート・同期"
   - "stdioトランスポート。MCPの公開はStreamable HTTP（POST /mcp）のみとする"
   - "アクションの担当者割り当て・通知（メール/Slack/プッシュ）。期限の到来はクエリで引き出すだけで、サーバから能動的に通知しない"
+  - "DBファイルの破損検知・自動修復・バックアップ。ANKB_DB_PATH を開けない場合は起動時にエラーメッセージを標準エラーへ出力して終了コード1で終了するだけとする"
 
 # 確信が持てないまま進める判断。コード側に @assumption AS-001 を残して回収可能にする。
 # owner と resolve_by が無い仮決めは、誰も確定させないまま本番に入る。
@@ -33,13 +34,13 @@ assumptions:
     statement: "アイテムは type=knowledge|plan|decision の3種とし、全種共通で title(1〜200文字) / body(Markdown, 最大100,000文字) / tags(最大20個, 各1〜50文字) /\
       actions(次アクションの配列。各要素は id / text / due(任意, YYYY-MM-DD) / done) / review_at(任意, YYYY-MM-DD) / relations / version / created_at / updated_at を持つ。\
       statusは種別ごとに knowledge: active|deprecated|archived、plan: draft|active|done|cancelled|archived、decision: proposed|accepted|superseded|rejected|archived とする。\
-      decision は rationale(根拠, 1文字以上) を必須とする"
+      decision は rationale(根拠, 1文字以上) を必須とする。type は作成後に変更できない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-002
     statement: "永続化は Node 標準の node:sqlite による単一ファイルSQLiteとし、パスは環境変数 ANKB_DB_PATH（既定 ./ankb.db）。全文検索はFTS5のtrigramトークナイザを使い、\
-      3文字未満のクエリは LIKE による部分一致にフォールバックする（日本語の2文字語『認証』『計画』を取りこぼさないため）"
+      3文字未満の語は LIKE による部分一致にフォールバックする（日本語の2文字語『認証』『計画』を取りこぼさないため）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -50,7 +51,8 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-004
-    statement: "認証は単一の共有Bearerトークン。環境変数 ANKB_TOKEN が設定されている場合のみ /mcp に Authorization: Bearer <token> を要求し、未設定の場合は 127.0.0.1 にのみbindして認証なしで受け付ける"
+    statement: "認証は単一の共有Bearerトークン。環境変数 ANKB_TOKEN が設定されている場合のみ POST /mcp に Authorization: Bearer <token> を要求し（比較は定数時間）、\
+      未設定の場合は 127.0.0.1 にのみbindして認証なしで受け付ける。認証は /mcp にだけかけ、フロントエンドの静的配信（GET / と GET /app/*）にはかけない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -61,18 +63,38 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-006
-    statement: "ツールのエラーはMCPの isError: true の結果として返し、先頭のテキストを JSON {code, message} とする。code は VALIDATION_ERROR | NOT_FOUND | CONFLICT の3種"
+    statement: "ツールのエラーはMCPの isError: true の結果として返し、先頭のテキストを JSON {code, message} とする。code は VALIDATION_ERROR | NOT_FOUND | CONFLICT の3種。\
+      成功時は structuredContent に結果オブジェクトを入れ、同じ内容のJSON文字列を先頭のテキストにも入れる"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-007
-    statement: "公開するMCPツールは kb_create_item / kb_get_item / kb_update_item / kb_search / kb_link_items / kb_list_actions / kb_complete_action / kb_due_reviews の8種。\
-      relations の種別は supersedes | depends_on | derived_from | relates_to の4種"
+    statement: "公開するMCPツールは FEAT-001 の kb_create_item / kb_get_item / kb_update_item / kb_search と、FEAT-003 の kb_link_items / kb_unlink_items / kb_list_actions /\
+      kb_complete_action / kb_due_reviews の計9種"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
-  - id: AS-008
-    statement: "日付の比較はサーバのローカルタイムゾーンではなくUTCの暦日で行う。kb_list_actions / kb_due_reviews は引数 as_of(YYYY-MM-DD, 既定はUTCの今日) を基準日とする"
+  - id: AS-022
+    statement: "文字数の上限・下限はUnicodeコードポイント単位で数える（絵文字1個は1文字。結合文字列は構成コードポイント数）。日付は YYYY-MM-DD 形式かつ実在する暦日のみ受け付ける。\
+      created_at / updated_at はミリ秒精度のISO 8601 UTC文字列（末尾Z）とする"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-023
+    statement: "kb_search の検索対象は title / body / rationale / tags / actions.text。空白区切りの複数語はAND。各語をFTS5のフレーズとしてエスケープし、\
+      演算子（OR/NOT/AND/NEAR/*/:/^/引用符）をリテラル扱いにする。結果は updated_at の降順、limit 既定20・最大100、offset によるページングで、total（総件数）を返す。\
+      status=archived は status フィルタで明示しない限り除外する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-026
+    statement: "Node の要件は 22.13 以上（node:sqlite をフラグ無しで使える版）とし、package.json の engines に記載する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-027
+    statement: "DNS rebinding・CSRF対策として、POST /mcp は Host ヘッダが 127.0.0.1:<port> / localhost:<port> または環境変数 ANKB_ALLOWED_HOSTS（カンマ区切り）に含まれる場合だけ受け付ける。\
+      Origin ヘッダがある場合は、同じ許可リストのホストに対する http(s) のオリジンだけを受け付ける。それ以外は HTTP 403 を返す。この検査は ANKB_TOKEN の有無に関係なく行う"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -111,8 +133,18 @@ acceptance:
   - id: AC-002
     kind: functional
     given: "空のナレッジベース"
-    when: "kb_create_item を (a) type=decision で rationale 省略、(b) title が空文字、(c) title が201文字 のいずれかで呼ぶ"
-    then: "3ケースとも isError の結果で code=VALIDATION_ERROR を返し、アイテムは保存されない（kb_search の件数が0のまま変わらない）"
+    when: "kb_create_item を (a) type=decision で rationale 省略、(b) title が空文字、(c) title が201文字、(d) body が100,001文字、(e) tags が21個、(f) review_at=2026-02-30 のいずれかで呼ぶ"
+    then: "6ケースとも isError の結果で code=VALIDATION_ERROR を返し、アイテムは保存されない（kb_search の total が0のまま変わらない）"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-031
+    kind: functional
+    given: "空のナレッジベース"
+    when: "kb_create_item を title が200文字（うち1文字は絵文字）、tags が20個でそれぞれ50文字、body が100,000文字で呼ぶ"
+    then: "isError にならず version=1 のアイテムを返す"
     priority: must
     verify: test
     status: pending
@@ -120,9 +152,9 @@ acceptance:
 
   - id: AC-003
     kind: functional
-    given: "アクションを1件持つアイテム X"
-    when: "(a) 存在しない id で kb_get_item を呼ぶ、(b) X の id と存在しないアクション id で kb_complete_action を呼ぶ"
-    then: "両ケースとも isError の結果で code=NOT_FOUND を返し、X の version は変わらない"
+    given: "アイテムが1件保存されている"
+    when: "存在しない id で kb_get_item を呼ぶ"
+    then: "isError の結果で code=NOT_FOUND を返す"
     priority: must
     verify: test
     status: pending
@@ -130,9 +162,9 @@ acceptance:
 
   - id: AC-004
     kind: functional
-    given: "version=1 のアイテム"
-    when: "kb_update_item を expected_version=1 で title を変更して呼ぶ"
-    then: "変更後の title と version=2 を返す"
+    given: "title に『認証』を含む version=1 のアイテム"
+    when: "kb_update_item を expected_version=1 で title の『認証』を『認可』に変更して呼ぶ"
+    then: "変更後の title と version=2 のアイテムを返す。以後の kb_search(query='認証') はそのアイテムを含まない結果を返す"
     priority: must
     verify: test
     status: pending
@@ -148,11 +180,31 @@ acceptance:
     status: pending
     attempts: 0
 
+  - id: AC-032
+    kind: functional
+    given: "version=1 の decision"
+    when: "kb_update_item を (a) rationale=''、(b) status=deprecated（decisionに無い値）、(c) type=knowledge、(d) review_at=2026-02-30、(e) expected_version 省略 のいずれかで呼ぶ"
+    then: "5ケースとも isError の結果で code=VALIDATION_ERROR を返し、version=1 のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
   - id: AC-006
     kind: functional
     given: "本文に『認証方式はOAuthに統一する』を含む decision と、含まない knowledge が保存されている"
     when: "kb_search を query='認証'（2文字）と query='OAuth'（5文字）でそれぞれ呼ぶ"
     then: "両クエリとも decision のみを含む結果を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-033
+    kind: functional
+    given: "本文に『C++ の方針』を含むアイテム A と、『a\"b』を含むアイテム B が保存されている"
+    when: "kb_search を query='C++'、query='a\"b'、query='OR' でそれぞれ呼ぶ"
+    then: "3クエリとも isError にならず、'C++' は A のみ、'a\"b' は B のみ、'OR' は0件の結果を返す"
     priority: must
     verify: test
     status: pending
@@ -168,51 +220,11 @@ acceptance:
     status: pending
     attempts: 0
 
-  - id: AC-008
+  - id: AC-034
     kind: functional
-    given: "due=2026-10-01 と due=2026-09-20 の未完了アクション、および done=true のアクションを持つアイテム群"
-    when: "kb_list_actions を as_of=2026-09-25 で呼ぶ"
-    then: "未完了アクション2件だけを due の昇順で返し、各要素に所属アイテムの id / title と overdue フラグ（2026-09-20 の方のみ true）を含む"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-009
-    kind: functional
-    given: "未完了アクションを1件持つアイテム"
-    when: "kb_complete_action をそのアイテム id とアクション id で呼ぶ"
-    then: "以後の kb_list_actions はそのアクションを含まない結果を返す"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-010
-    kind: functional
-    given: "review_at=2026-09-01 の decision と review_at=2026-12-01 の decision"
-    when: "kb_due_reviews を as_of=2026-09-25 で呼ぶ"
-    then: "review_at=2026-09-01 の decision のみを返す"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-011
-    kind: functional
-    given: "status=accepted の decision A と、新しい decision B"
-    when: "kb_link_items を from=B, to=A, type=supersedes で呼ぶ"
-    then: "以後の kb_get_item(A) が status=superseded と superseded_by=B の id を返す"
-    priority: must
-    verify: test
-    status: pending
-    attempts: 0
-
-  - id: AC-012
-    kind: functional
-    given: "存在するアイテム X"
-    when: "kb_link_items を (a) from=X, to=存在しない id、(b) from=X, to=X で呼ぶ"
-    then: "(a) は code=NOT_FOUND、(b) は code=VALIDATION_ERROR の isError 結果を返し、X の relations は変わらない"
+    given: "アイテムが25件保存されている"
+    when: "kb_search を query 無し・limit 省略で呼び、続けて offset=20 で呼ぶ"
+    then: "1回目は updated_at 降順の20件と total=25 を返し、2回目は残りの5件を返す"
     priority: must
     verify: test
     status: pending
@@ -221,8 +233,18 @@ acceptance:
   - id: AC-013
     kind: functional
     given: "環境変数 ANKB_TOKEN を設定して起動したサーバ"
-    when: "Authorization ヘッダ無し、または異なるトークンで POST /mcp を送る"
-    then: "HTTP 401 を返し、ツールは実行されない（アイテム件数が変わらない）"
+    when: "(a) Authorization ヘッダ無し、(b) 異なるトークン で POST /mcp（kb_create_item）を送り、(c) Authorization ヘッダ無しで GET / を送る"
+    then: "(a)(b) は HTTP 401 を返してアイテム件数が変わらず、(c) は HTTP 200 を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-035
+    kind: functional
+    given: "ANKB_TOKEN 未設定で起動したサーバ"
+    when: "POST /mcp（kb_create_item）を (a) Origin: http://evil.example 付き、(b) Host: evil.example:<port> で送る"
+    then: "両ケースとも HTTP 403 を返し、アイテム件数は変わらない"
     priority: must
     verify: test
     status: pending
@@ -240,9 +262,9 @@ acceptance:
 
   - id: AC-015
     kind: nfr
-    given: "10,000件のアイテムを保存したナレッジベース（CI の ubuntu-latest 相当）"
-    when: "kb_search を 3文字以上の query で100回呼ぶ"
-    then: "p95 応答時間が 200ms 以下である"
+    given: "本文平均2,000文字のアイテムを10,000件保存したナレッジベース（CI の ubuntu-latest 相当）"
+    when: "kb_search を 3文字以上の query（FTS経路）で100回、2文字の query（LIKE経路）で100回呼ぶ"
+    then: "p95 応答時間が FTS経路で 200ms 以下、LIKE経路で 500ms 以下である"
     priority: should
     verify: test
     status: pending

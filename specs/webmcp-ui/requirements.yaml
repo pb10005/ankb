@@ -23,7 +23,9 @@ out_of_scope:
   - "オフライン動作・Service Worker・楽観的更新のローカルキャッシュ"
   - "モバイル専用レイアウト。幅360px以上で横スクロールが発生しないことだけを保証する"
   - "英語UI・多言語化。UI文言は日本語のみ"
-  - "サーバ側MCPツール全8種の網羅的な公開。WebMCPで公開するのは AS-009 の5種のみ（関係付け・更新はUIからのみ操作）"
+  - "サーバ側MCPツール全9種の網羅的な公開。WebMCPで公開するのは AS-009 の5種のみ"
+  - "UIからのアイテム更新・関係付け・見直し期限一覧（kb_update_item / kb_link_items / kb_unlink_items / kb_due_reviews）。FEAT-002では画面を作らず、MCPクライアントから直接操作する"
+  - "CDP（DevTools Protocol）経由の isTrusted=true な合成入力による承認の偽装の防止。ブラウザ拡張型エージェントがこれを行えることは既知の残存リスクとして AS-018 に記録する"
 
 # 確信が持てないまま進める判断。コード側に @assumption AS-001 を残して回収可能にする。
 # owner と resolve_by が無い仮決めは、誰も確定させないまま本番に入る。
@@ -55,6 +57,42 @@ assumptions:
     resolve_by: "2026-10-09"
 
 # 人間の判断が要る未決事項。frozen にするには空にする（確定させるか assumptions へ降格）。
+  - id: AS-013
+    statement: "アイテム由来の文字列（title / body / tags / actions.text / rationale）はDOMへ textContent でのみ挿入し、innerHTML / insertAdjacentHTML を使わない。プロンプトインジェクションされたエージェントが書き込んだ文字列で sessionStorage のトークンを持ち出させないため"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-014
+    statement: "『期限切れ』はバックエンド kb_list_actions の overdue フラグ（FEAT-003 AS-008、UTC暦日基準）だけで決め、フロントエンドは日付計算をしない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-015
+    statement: "確認ダイアログの表示中に届いた2件目の書き込み execute はキューに積まず、即座に isError とテキスト BUSY を返す。ダイアログ表示中のリロード・遷移は却下扱い（何も送信しない）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-016
+    statement: "バックエンドのツールエラー（FEAT-001 AS-006 の {code, message}）は ankb_* の結果として isError 付きでそのまま返す。HTTP 401 の場合は isError と AUTH_REQUIRED を返し、画面にトークン入力欄と『トークンが違います』を表示して sessionStorage のトークンを消去する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-017
+    statement: "エージェントによる ankb_search / ankb_get_item の実行結果は画面の一覧・詳細表示を置き換え、検索欄にそのクエリと『エージェントによる検索』の表示を出す。ankb_search の limit は既定20・最大100（kb_search と同じ）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-018
+    statement: "承認・却下ボタンは isTrusted=false のイベント（element.click() / dispatchEvent）を無視する。CDP経由の合成入力は isTrusted=true になるためこの対策では防げず、残存リスクとして受容する。WebMCP提案の client.requestUserInteraction() がブラウザ実装に存在する場合はそちらの採用を再検討する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-019
+    statement: "navigator.modelContext が存在しても registerTool が関数でない、または呼び出しが例外を投げた場合は『WebMCP: 無効』表示に切り替え、人間向けUIは動作を続ける。登録成功時はヘッダに『WebMCP: 有効』を表示する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
 open_questions: []
 
 # 受入基準。ハッピーパスだけ書くと必ず後で破綻するので、異常系を必ず1件以上入れる。
@@ -122,9 +160,9 @@ acceptance:
 
   - id: AC-022
     kind: functional
-    given: "期限切れの未完了アクションを持つアイテムが保存され、トップページを開いた状態"
+    given: "kb_list_actions が overdue=true を返すアクション A と、due がUTCの当日であるアクション B が保存され、ブラウザの timezoneId が Asia/Tokyo"
     when: "アクション一覧パネルを表示する"
-    then: "そのアクションを期限切れを示す『期限切れ』ラベル付きで表示する"
+    then: "A の行にだけ『期限切れ』ラベルを表示し、B の行には表示しない"
     priority: must
     verify: test
     status: pending
@@ -146,6 +184,66 @@ acceptance:
     when: "トップページを開く"
     then: "document.documentElement.scrollWidth が 360px 以下である"
     priority: should
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-042
+    kind: functional
+    given: "ankb_create_item の確認ダイアログを表示中"
+    when: "ページ内スクリプトから承認ボタンに element.click() を行う（isTrusted=false のイベント）"
+    then: "バックエンドへ送信せず、アイテム件数は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-043
+    kind: functional
+    given: "ankb_create_item の確認ダイアログを表示中"
+    when: "60秒間なにも操作しない（テストでは時計を進める）"
+    then: "ツール結果に isError と USER_REJECTED を返し、アイテム件数は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-044
+    kind: functional
+    given: "未完了アクションを1件持つアイテムが保存され、トップページを開いた状態"
+    when: "エージェントが ankb_complete_action を execute し、人間が確認ダイアログで『却下』を押す"
+    then: "ツール結果に isError と USER_REJECTED を返し、kb_list_actions の結果にそのアクションが残る"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-045
+    kind: functional
+    given: "トップページを開いた状態"
+    when: "エージェントが ankb_create_item を type=decision, title=T, body=B, rationale=R, actions 1件で execute する"
+    then: "確認ダイアログに type / title / body / rationale / actions の各値を表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-046
+    kind: functional
+    given: "title が <img src=x onerror=window.__xss=1>、body が <script>window.__xss=1</script> のアイテムが保存されている"
+    when: "検索結果一覧と詳細表示を開く"
+    then: "その文字列をテキストとして表示し、window.__xss は undefined のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-047
+    kind: functional
+    given: "トップページを開いた状態"
+    when: "エージェントが ankb_create_item を execute し、人間が『承認』を押す"
+    then: "リロードせずに画面の一覧に新しいアイテムの title を表示する"
+    priority: must
     verify: test
     status: pending
     attempts: 0

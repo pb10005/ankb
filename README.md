@@ -11,12 +11,13 @@
 ```
  ブラウザ内エージェント ──WebMCP (navigator.modelContext)──▶ フロントエンド (FEAT-002)
                                                               │ fetch: JSON-RPC
- Claude などのMCPクライアント ──Streamable HTTP (POST /mcp)──▶ サーバサイドMCP (FEAT-001) ──▶ SQLite (FTS5)
+ Claude などのMCPクライアント ──Streamable HTTP (POST /mcp)──▶ サーバサイドMCP (FEAT-001/003) ──▶ SQLite (FTS5)
 ```
 
 | 層 | 仕様 | 状態 |
 |---|---|---|
 | バックエンド（サーバサイドMCP） | [`specs/kb-core/requirements.yaml`](specs/kb-core/requirements.yaml) | draft |
+| アクション・見直し・決定の置き換え | [`specs/kb-actions/requirements.yaml`](specs/kb-actions/requirements.yaml) | draft |
 | フロントエンド（WebMCP） | [`specs/webmcp-ui/requirements.yaml`](specs/webmcp-ui/requirements.yaml) | draft |
 
 ## 開発プロセス
