@@ -1,0 +1,127 @@
+# FEAT-003 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ3
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-003
+title: "ノートのCRUDとエディタ: 作成・編集・公開範囲・共有・版履歴"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "美咲と健太が自分用のメモとチームに共有するノートを1つの場所で書き分けられるように、ノートの作成・編集・公開範囲の切り替え・ユーザー単位の共有・版履歴の閲覧をWeb UIで提供する。3種類の visibility がUIから設定でき、設定どおりに他のユーザーからの見え方が変わることを完了とする。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "Markdown の WYSIWYG 編集。本文は Markdown のテキストエリアで編集し、表示時にレンダリングする"
+  - "版履歴からの復元（巻き戻し）。版履歴は閲覧のみ"
+  - "ノートへの画像・ファイル添付"
+  - "タグ・フォルダによる分類"
+
+assumptions:
+  - id: AS-009
+    statement: "UI上の visibility の表記は private=『非公開』、shared=『指定した人』、workspace=『チーム全体』とする。専門用語をUIに出さない（ペルソナA）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-010
+    statement: "title は1〜200文字、body は最大100,000文字（Unicodeコードポイント単位）とする"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions: []
+
+acceptance:
+  - id: AC-018
+    kind: functional
+    given: "ログイン済みの美咲"
+    when: "新規ノートを title と body を入力して保存する"
+    then: "ノート画面に『非公開』と『下書き』を表示する（DB 上は visibility=private / status=draft で保存）"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-019
+    kind: functional
+    given: "美咲の private ノート"
+    when: "美咲が公開範囲を『チーム全体』に変更し、同じ workspace の健太がノート一覧を開く"
+    then: "健太のノート一覧にそのノートを表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-020
+    kind: functional
+    given: "美咲の private ノート"
+    when: "美咲が健太を『閲覧のみ』で共有し、健太がそのノートを開く"
+    then: "健太の画面に本文を表示し、編集ボタンは表示しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-021
+    kind: functional
+    given: "健太に閲覧のみで共有されたノート"
+    when: "健太のセッションでノート更新APIを直接呼ぶ"
+    then: "403 を返し、ノートの本文は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-022
+    kind: functional
+    given: "version が1件のノート"
+    when: "オーナーが本文を編集して保存し、版履歴を開く"
+    then: "編集前の本文を持つ版を日時付きで一覧に表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-023
+    kind: functional
+    given: "新規ノートの編集画面"
+    when: "title を空のまま保存する"
+    then: "『タイトルを入力してください』を表示し、ノートを保存しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-024
+    kind: functional
+    given: "status=active のノート"
+    when: "オーナーが『アーカイブ』を押す"
+    then: "status=archived に更新し、既定のノート一覧に表示しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-025
+    kind: functional
+    given: "draft のノート"
+    when: "オーナーが『公開する（有効にする）』を押す"
+    then: "status=active に更新し、ノート画面の『下書き』表示を消す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-026
+    kind: functional
+    given: "美咲の private ノート"
+    when: "健太が公開範囲の変更UIを探す（edit 共有されている場合を含む）"
+    then: "健太の画面には公開範囲と共有の設定ボタンを表示しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0

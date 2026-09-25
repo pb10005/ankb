@@ -1,0 +1,156 @@
+# FEAT-006 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ6 / §6.2 / UC3
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-006
+title: "置き換え関係の推定と承認: AIが推定し人がワンクリックで承認する"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "どれが今有効かの判定を人手の整理に頼ると更新されない。ノートを有効にした時点でAIが置き換え・矛盾の候補を推定して提案し、両方のノートの編集権限を持つ人間がワンクリックで承認・却下できるようにする。承認だけが superseded への唯一の経路であり、エージェントは提案まではできても承認はできない。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "提案の自動承認（確信度が高くても人間の承認を必須とする）"
+  - "3ノート以上をまとめて統合する提案"
+  - "提案の通知（メール・プッシュ）。ヘッダーの件数表示とインボックスだけで知らせる"
+
+assumptions:
+  - id: AS-020
+    statement: "バックグラウンドジョブは Supabase Queues（pgmq）を使う。ノートの active 化・active ノートの更新のトリガーでジョブを投入し、pg_net で Next.js の内部ワーカーエンドポイントを即時に呼ぶ。取りこぼしは pg_cron が毎分ワーカーを呼んで回収する。Edge Functions（Deno）を使わないのは、検索・判定のコアロジックを Next.js 側の TypeScript と共有するため（指示書 §3 の選定報告）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-021
+    statement: "候補数 N=5、確信度しきい値 0.7 は環境変数 ANKB_RELATION_TOP_N / ANKB_RELATION_THRESHOLD で変更できる初期値とする（指示書 §12: 運用で調整）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-022
+    statement: "『同じペアは再提案しない』は、(from, to, type) の組に加えて逆向きの組も対象とし、rejected の関係が存在する限り再提案しない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-023
+    statement: "推定ジョブはサービスロールで動くが、ジョブが読むのはトリガー元ノートと同じ workspace のノートだけとする"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions: []
+
+acceptance:
+  - id: AC-049
+    kind: functional
+    given: "旧・出張規程（active）が存在し、美咲が両ノートの編集権限を持つ（LLM はスタブ）"
+    when: "美咲が新しい出張規程ノートを active にする"
+    then: "60秒以内に新ノートの画面に『このノートは「旧・出張規程」を置き換えるものですか？』のバナーを表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-050
+    kind: functional
+    given: "AC-049 のバナーを表示している"
+    when: "美咲が『はい』を押す"
+    then: "旧・出張規程の status を superseded に更新し、以後の検索で旧・出張規程を superseded_context に返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-051
+    kind: functional
+    given: "AC-049 のバナーを表示している"
+    when: "美咲が『いいえ』を押した後、新ノートを再度更新して保存する"
+    then: "その提案を rejected で保存し、同じノートの組の新しい提案を作成しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-052
+    kind: functional
+    given: "旧ノートの編集権限を持たず閲覧だけできるユーザー"
+    when: "新ノートの画面を開く"
+    then: "提案の内容は表示し、『はい』『いいえ』ボタンは表示しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-053
+    kind: functional
+    given: "置き換え候補の片方を閲覧できないユーザー"
+    when: "ヘッダーの提案件数とインボックスを開く"
+    then: "その提案を件数に含めず、インボックスにも表示しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-054
+    kind: functional
+    given: "LLM スタブが確信度0.69の supersedes 判定を返す"
+    when: "ノートを active にする"
+    then: "note_relation を作成しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-055
+    kind: functional
+    given: "類似度の高い active ノートが8件ある"
+    when: "ノートを active にする"
+    then: "LLM の判定を最大5件の候補にだけ行い、6件目以降の候補との note_relation を作成しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-056
+    kind: functional
+    given: "未処理の提案が3件あるユーザー"
+    when: "インボックスで3件を選択して一括で『いいえ』を押す"
+    then: "3件とも rejected に更新し、ヘッダーの提案件数を0と表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-057
+    kind: functional
+    given: "提案のバナーを表示している"
+    when: "『比較する』を押す"
+    then: "2つのノートを左右に並べ、差分の行をハイライトした比較ビューを表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-058
+    kind: functional
+    given: "提案のバナーを表示している"
+    when: "美咲が『後で』を押す"
+    then: "提案を proposed のまま残し、インボックスと件数に引き続き表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-059
+    kind: functional
+    given: "LLM API が5xxを返す状態"
+    when: "ノートを active にする"
+    then: "ノートの保存は成功し、推定ジョブは最大3回まで再試行した後に失敗を記録して note_relation を作成しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0

@@ -1,0 +1,97 @@
+# FEAT-001 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ1 / §3
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-001
+title: "雛形: Next.js + Supabase の認証とCI"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "ankb の全機能（Web UI・サーバMCP・WebMCP）が乗る土台として、Next.js（App Router）と Supabase Auth によるログインと、lint・型チェック・テストを回すCIを用意する。ログインしたユーザーだけがダッシュボードに到達できる状態を完了とする。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "ソーシャルログイン・SSO・多要素認証"
+  - "パスワードリセット・メールアドレス変更の画面"
+  - "workspace の作成・招待・メンバー管理の画面。v1 の workspace とメンバーはシードスクリプトで投入する（AS-003）"
+
+assumptions:
+  - id: AS-001
+    statement: "ログイン方式は Supabase Auth のメールアドレス＋パスワードとする。マジックリンクは使わない（ローカル・CIでメール受信を介さずにテストできるため）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-002
+    statement: "ローカル開発とCIは Supabase CLI（supabase start、Docker）で Postgres・Auth を起動する。テストフレームワークは単体・結合が Vitest、E2E が Playwright とする"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-003
+    statement: "workspace・member・ユーザーは v1 ではシードスクリプト（supabase/seed）でのみ作成する。サインアップ画面は設けない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions:
+  - id: OQ-001
+    question: "当初の依頼にあった『のちのアクションに活用できる形で保管する』（ノートに次アクション・期限・見直し日を持たせる）は指示書に無い。v1 から外してよいか"
+    default: "指示書に従い v1 では扱わない（全スペックの out_of_scope 相当）"
+    raised: "2026-09-25"
+    status: open
+
+acceptance:
+  - id: AC-001
+    kind: functional
+    given: "未ログインのブラウザ"
+    when: "/dashboard を開く"
+    then: "/login へリダイレクトし、ログインフォームを表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-002
+    kind: functional
+    given: "シード済みユーザー（美咲）"
+    when: "/login で正しいメールアドレスとパスワードを送信する"
+    then: "/dashboard へ遷移し、美咲のメールアドレスを表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-003
+    kind: functional
+    given: "シード済みユーザー（美咲）"
+    when: "/login で誤ったパスワードを送信する"
+    then: "『メールアドレスまたはパスワードが違います』を表示し、/dashboard へは遷移しない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-004
+    kind: functional
+    given: "ログイン済みのブラウザ"
+    when: "ログアウトを押した後に /dashboard を開く"
+    then: "/login へ遷移し、ログインフォームを表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-005
+    kind: functional
+    given: "main 向けのプルリクエスト"
+    when: "lint・型チェック・テストのいずれか1つが失敗するコミットを push する"
+    then: "GitHub Actions のワークフローが失敗ステータスを返す"
+    priority: must
+    verify: inspection
+    evidence: ""
+    status: pending
+    attempts: 0

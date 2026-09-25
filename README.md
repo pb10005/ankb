@@ -3,22 +3,23 @@
 知識を体系化して整理するだけでなく、**のちのアクションに活用できる形で**保管するナレッジベース。
 扱う情報はドメイン知識・計画書・決定事項。
 
-- 各アイテムは本文に加えて「次アクション」「見直し期日」「根拠」「アイテム間の関係（supersedes / depends_on ほか）」を構造化フィールドとして持つ
-- エージェントは「未完了アクションの一覧」「見直し期限を過ぎた決定」「この決定を置き換えた新しい決定」を問い合わせだけで引き出せる
+散らばった断片から、今有効な答えを、根拠付きで組み立てる。人間（Web UI）・ブラウザ内エージェント（WebMCP）・外部エージェント（サーバMCP）の3つの入口が、同じ検索・有効性判定・権限のコアを通る。
 
-## アーキテクチャ
+## 仕様の出典
 
-```
- ブラウザ内エージェント ──WebMCP (navigator.modelContext)──▶ フロントエンド (FEAT-002)
-                                                              │ fetch: JSON-RPC
- Claude などのMCPクライアント ──Streamable HTTP (POST /mcp)──▶ サーバサイドMCP (FEAT-001/003) ──▶ SQLite (FTS5)
-```
+プロダクト要件は [`docs/instructions.md`](docs/instructions.md)（ankb 実装指示書）が原典。
+実装ステップ（§10）ごとに、検証可能な受入基準へ落とした要件を `specs/` に置く。
 
-| 層 | 仕様 | 状態 |
+| ステップ | 仕様 | 状態 |
 |---|---|---|
-| バックエンド（サーバサイドMCP） | [`specs/kb-core/requirements.yaml`](specs/kb-core/requirements.yaml) | draft |
-| アクション・見直し・決定の置き換え | [`specs/kb-actions/requirements.yaml`](specs/kb-actions/requirements.yaml) | draft |
-| フロントエンド（WebMCP） | [`specs/webmcp-ui/requirements.yaml`](specs/webmcp-ui/requirements.yaml) | draft |
+| 1 雛形 | [`specs/foundation`](specs/foundation/requirements.yaml) | draft |
+| 2 スキーマとRLS | [`specs/schema-rls`](specs/schema-rls/requirements.yaml) | draft |
+| 3 ノートのCRUD | [`specs/note-crud`](specs/note-crud/requirements.yaml) | draft |
+| 4 検索パイプライン | [`specs/search-pipeline`](specs/search-pipeline/requirements.yaml) | draft |
+| 5 回答の合成 | [`specs/answer-synthesis`](specs/answer-synthesis/requirements.yaml) | draft |
+| 6 置き換えの推定と承認 | [`specs/relation-inference`](specs/relation-inference/requirements.yaml) | draft |
+| 7 サーバMCP | [`specs/server-mcp`](specs/server-mcp/requirements.yaml) | draft |
+| 8 WebMCP | [`specs/webmcp`](specs/webmcp/requirements.yaml) | draft |
 
 ## 開発プロセス
 

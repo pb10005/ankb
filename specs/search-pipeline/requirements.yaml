@@ -1,0 +1,156 @@
+# FEAT-004 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ4 / §6.1
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-004
+title: "検索パイプライン: ハイブリッド検索と有効性の解決 resolveCurrent()"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "同じテーマのノートが複数あるとどれが今有効か判別できない、という課題（§1.1）に対し、全入口で共通の検索関数が、ベクトル検索と全文検索の結果から置き換え済みのノートを本流から外し、旧情報・矛盾・更新の可能性を区別した SearchResult を返すようにする。検索は常に質問者のRLS下で実行する。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "検索結果のファセット・絞り込みUI（日付・作成者での絞り込み）"
+  - "ノート以外（議事録音声・添付ファイル）の検索"
+  - "検索クエリの履歴保存・サジェスト"
+
+assumptions:
+  - id: AS-011
+    statement: "日本語全文検索は PGroonga を採用する。Supabase が公式に提供する拡張であり、日本語の2文字語を分かち書き無しで検索できる。pg_bigm は Supabase のホスト環境で利用可能であることを確認できていないため採用しない（指示書 §12 のエンジニアリング判断）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-012
+    statement: "チャンク化は見出し単位で分割し、1チャンク最大800文字・前後100文字の重なりを持たせる。チャンクと embedding はノートの保存時に同期的に作り直す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-013
+    statement: "ハイブリッド検索の統合は Reciprocal Rank Fusion（k=60）とし、再ランキングは RRF スコア順に effective_from・updated_at が新しいものを同点時に優先する。LLM による再ランキングは行わない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-014
+    statement: "検索の本体は1つの TypeScript 関数 searchKnowledge(client, query) とし、Web UI の API・サーバMCP・WebMCP のすべてがこれを呼ぶ。client は質問者のJWTで作った Supabase クライアントで、サービスロールキーは使わない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-015
+    statement: "conflicts の『同じテーマ』は contradicts 関係（confirmed または proposed）で直接結ばれていることと定義し、テーマの自動推定は行わない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-016
+    statement: "CI の自動テストでは LLM と embedding の呼び出しを決定的なスタブに差し替える。実APIを使う評価テスト（AC-034、FEAT-005 の評価セット）は API キーがある環境でだけ実行する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions: []
+
+acceptance:
+  - id: AC-027
+    kind: functional
+    given: "出張規程シナリオ（旧規程 superseded、改定通知 active、転記メモ active）"
+    when: "美咲が『出張の宿泊費の上限』で検索する"
+    then: "旧規程を hits に含めず、superseded_context に superseded_by=改定通知の id 付きで返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-028
+    kind: functional
+    given: "置き換え先ノートが美咲から閲覧できない superseded のノート"
+    when: "美咲がそのノートに該当する語で検索する"
+    then: "そのノートを superseded_context に superseded_by 無しで返す。シリアライズした結果の文字列は置き換え先の id・タイトルを含まない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-029
+    kind: functional
+    given: "contradicts 関係（proposed）を持つ active なノート2件"
+    when: "両ノートに該当する語で検索する"
+    then: "conflicts に2件の note_id と relation_state=proposed を含む結果を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-030
+    kind: functional
+    given: "proposed な supersedes 関係の置き換え対象になっている active なノート"
+    when: "そのノートに該当する語で検索する"
+    then: "そのノートの hit に possibly_outdated=true を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-031
+    kind: functional
+    given: "美咲の draft ノートと健太の workspace 公開の draft ノート"
+    when: "美咲が両方に該当する語で検索する"
+    then: "美咲自身の draft だけを含み、健太の draft を含まない結果を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-032
+    kind: functional
+    given: "権限シナリオ（3ユーザー×private/shared/workspace）"
+    when: "各ユーザーが全ノートに該当する語で検索する"
+    then: "閲覧できないノートの id・title・本文断片のいずれも、シリアライズした SearchResult の文字列に含まない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-033
+    kind: functional
+    given: "本文に『宿泊費』を含むノート"
+    when: "2文字の語『宿泊』で検索する"
+    then: "そのノートを hits に含む結果を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-034
+    kind: functional
+    given: "本文が『1泊あたりの宿泊費の上限は12,000円』のノート（『ホテル』『いくら』を含まない）"
+    when: "『ホテル代っていくらまで？』で検索する（実際の embedding を使う評価テスト）"
+    then: "そのノートを hits の上位5件以内に含む結果を返す"
+    priority: should
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-035
+    kind: functional
+    given: "LLM のクエリ展開APIがエラーを返す状態"
+    when: "検索する"
+    then: "元のクエリだけでハイブリッド検索した結果を返し、エラーにしない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-036
+    kind: nfr
+    given: "1,000件のノートを投入したデータベース（CI の ubuntu-latest 上の Supabase CLI 相当）"
+    when: "LLM のクエリ展開をスタブにして検索を100回実行する"
+    then: "p95 応答時間が 800ms 以下である"
+    priority: should
+    verify: test
+    status: pending
+    attempts: 0

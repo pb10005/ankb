@@ -1,0 +1,163 @@
+# FEAT-007 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ7 / §7.1 / UC4
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-007
+title: "サーバMCP: 外部エージェントがユーザー本人の権限で読み書きする"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "翔が Claude Code での実装中に仕様や設計判断を参照できるように、ankb を Streamable HTTP のMCPサーバとして公開する。外部エージェントはOAuthで得たユーザー本人のトークンで動き、Web UI と同じ検索関数・同じRLSを通る。承認・公開範囲の変更・削除はツールとして提供しない。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "stdio トランスポート"
+  - "resolve_relation（承認）・公開範囲の変更・ノート削除のMCPツール（指示書 §7.1）"
+  - "APIキー（長期トークン）による認証。認証はOAuthのみ"
+  - "MCPのリソース・プロンプト機能。ツールだけを公開する"
+
+assumptions:
+  - id: AS-024
+    statement: "MCPエンドポイントは Next.js の Route Handler（/mcp）として同じアプリに置き、@modelcontextprotocol/sdk の Streamable HTTP をステートレスで動かす。認可サーバは Supabase Auth の OAuth 2.1 サーバ機能を使い、ankb はリソースサーバとして Protected Resource Metadata を公開してトークン（Supabase の JWT）を検証する。受け取ったJWTをそのまま Supabase クライアントに渡し、RLS を効かせる"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-025
+    statement: "エラーは isError: true の結果として返し、先頭テキストを JSON {code, message} とする。code は VALIDATION_ERROR | NOT_FOUND | FORBIDDEN | CONFLICT。閲覧できないノートは FORBIDDEN ではなく NOT_FOUND を返す（存在を漏らさない）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-026
+    statement: "list_pending_relations は、呼び出したユーザーが両方のノートの編集権限を持つ proposed の提案だけを返す"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions: []
+
+acceptance:
+  - id: AC-060
+    kind: functional
+    given: "OAuthで認可済みの翔のトークン"
+    when: "tools/list を呼ぶ"
+    then: "search_knowledge / ask / get_note / get_note_lineage / list_pending_relations / create_note / update_note / propose_relation の8件だけを返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-061
+    kind: functional
+    given: "翔のトークン"
+    when: "search_knowledge を呼ぶ"
+    then: "hits / superseded_context / conflicts と、空でない文字列の synthesis_guidelines を持つ structuredContent を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-062
+    kind: functional
+    given: "翔が閲覧できない美咲の private ノート P"
+    when: "翔のトークンで search_knowledge（P に該当する語）と get_note(P の id) を呼ぶ"
+    then: "search_knowledge の結果に P を含まず、get_note は存在しない id と同じ NOT_FOUND を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-063
+    kind: functional
+    given: "翔が両方を閲覧できる active なノート2件"
+    when: "propose_relation(type=supersedes) を呼ぶ"
+    then: "state=proposed / proposed_by=agent の note_relation を作成する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-064
+    kind: functional
+    given: "AC-063 で作成した提案"
+    when: "翔のトークンで resolve_relation 相当の操作（update_note で status=superseded、存在しないツール名 resolve_relation の呼び出し）を試みる"
+    then: "いずれもエラーを返し、提案の state は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-065
+    kind: functional
+    given: "Authorization ヘッダの無いリクエスト"
+    when: "POST /mcp を送る"
+    then: "401 と、Protected Resource Metadata の URL を含む WWW-Authenticate ヘッダを返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-066
+    kind: functional
+    given: "翔のトークン"
+    when: "create_note を visibility・status を指定せずに呼ぶ"
+    then: "visibility=private / status=draft のノートを作成する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-067
+    kind: functional
+    given: "翔に view で共有されたノート"
+    when: "update_note を呼ぶ"
+    then: "権限エラーを返し、ノートの本文は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-068
+    kind: functional
+    given: "置き換えの連鎖 A→B→C のうち、翔は B を閲覧できない"
+    when: "get_note_lineage(C) を呼ぶ"
+    then: "B の id・タイトルを含まず、A と C を日付の昇順で並べた結果を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-069
+    kind: functional
+    given: "出張規程シナリオと美咲のセッション"
+    when: "同じクエリで Web UI の検索API・サーバMCP の search_knowledge・WebMCP の search_knowledge を呼ぶ"
+    then: "3つの入口の結果のうち hits / superseded_context / conflicts が一致する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-070
+    kind: functional
+    given: "権限シナリオの全ユーザーのトークン"
+    when: "8ツールすべてを、各ユーザーが閲覧できないノートの id または該当語を引数にして呼ぶ"
+    then: "閲覧できないノートの id・title・本文断片・件数を含む返り値が1件も無い"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-071
+    kind: functional
+    given: "README の接続手順"
+    when: "Claude Code に `claude mcp add --transport http` で ankb を登録し、OAuth のログインを完了する"
+    then: "Claude Code の search_knowledge 呼び出しが SearchResult を返す"
+    priority: must
+    verify: manual
+    evidence: ""
+    status: pending
+    attempts: 0

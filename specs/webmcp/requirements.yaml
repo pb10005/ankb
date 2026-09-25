@@ -1,0 +1,186 @@
+# FEAT-008 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ8 / §7.2 / UC5
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-008
+title: "WebMCP: ブラウザ内エージェントが画面の文脈を共有してUIを操作する"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "美咲がノートを開いたまま『これって最新？』と聞けるように、ankb のWebページ自身が document.modelContext（WebMCP）にツールを登録し、ブラウザ内エージェントが画面の文脈（開いているノート・検索クエリ・選択範囲）を取得し、ノートや比較ビューを開き、引用をハイライトできるようにする。確定操作（承認・保存）は必ず人間のクリックを経由する。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "WebMCP 非対応ブラウザ向けの代替手段（拡張機能・ポリフィル）。非対応ブラウザでは人間向けUIだけが動く（OQ-003）"
+  - "ankb 自身がブラウザ内アシスタント（チャットUI）を提供すること。アシスタントはブラウザまたは拡張機能側が持つ"
+  - "CDP 経由の isTrusted=true な合成入力による承認・保存の偽装の防止（残存リスクとして AS-029 に記録）"
+
+assumptions:
+  - id: AS-031
+    statement: "WebMCP は 2026-09-25 時点の仕様ドラフト（webmachinelearning/webmcp の index.bs、CG-DRAFT）に合わせる。エントリポイントは document.modelContext（SecureContext 必須）、登録は registerTool(tool, {signal})、解除は signal の abort、execute(input, {signal}) の戻り値は JSON シリアライズ可能なオブジェクト。読み取り系と画面操作のツールには annotations.readOnlyHint=true、request_relation_approval と draft_note には consequentialHint=true を付ける。document.modelContext が無い場合は何も登録しない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-027
+    statement: "WebMCP で登録するツールは、サーバMCPの読み取り系5件（search_knowledge / ask / get_note / get_note_lineage / list_pending_relations）、画面操作5件（get_current_context / open_note / open_compare_view / highlight_citation / draft_note）、request_relation_approval の計11件とする。propose_relation は §6.2（WebMCP のエージェントも提案できる）と §7.2（読み取り系＋画面操作）が食い違うため v1 では登録しない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-028
+    statement: "WebMCP の読み取り系ツールは、ブラウザのログインセッションで Web UI と同じ Next.js API（searchKnowledge を呼ぶもの）を呼ぶ。ブラウザからサービスロールキーやサーバMCPのOAuthトークンは使わない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-029
+    statement: "承認・保存のボタンは isTrusted=false のイベントを無視する。CDP 経由の合成入力は isTrusted=true になるため防げず、残存リスクとして受容する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-030
+    statement: "E2E テストでは Playwright の addInitScript で document.modelContext のスタブ（registerTool(tool, {signal}) / getTools()）を注入し、登録・解除と execute の結果を検証する。加えて Chrome のフラグ enable-webmcp-testing を有効にした実ブラウザでのスモークテストを手動で1回行う"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions:
+  - id: OQ-003
+    question: "WebMCP 非対応ブラウザでの代替手段（指示書 §12）"
+    default: "代替手段は用意しない。非対応ブラウザでは人間向けUI（質問欄 ask を含む）だけが動く"
+    raised: "2026-09-25"
+    status: open
+
+acceptance:
+  - id: AC-072
+    kind: functional
+    given: "document.modelContext があるブラウザで未ログイン"
+    when: "/login を開く"
+    then: "registerTool の呼び出し回数が0回と記録される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-073
+    kind: functional
+    given: "document.modelContext があるブラウザでログイン済み"
+    when: "/dashboard を開く"
+    then: "registerTool に渡された name の集合が AS-027 の11件と一致する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-074
+    kind: functional
+    given: "ログイン済みで WebMCP のツールを登録済み"
+    when: "ログアウトする"
+    then: "以後の getTools() は ankb のツールを1件も含まない配列を返す（registerTool に渡した AbortSignal を abort して解除）"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-075
+    kind: functional
+    given: "美咲がノート N を開いている"
+    when: "エージェントが get_current_context を execute する"
+    then: "note_id=N の id と画面の選択範囲の文字列を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-076
+    kind: functional
+    given: "AC-075 の後に美咲が検索画面へ遷移し『宿泊費』で検索した"
+    when: "エージェントが get_current_context を execute する"
+    then: "note_id を含まず query='宿泊費' を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-077
+    kind: functional
+    given: "美咲が superseded のノートを開いている"
+    when: "エージェントが get_current_context と get_note_lineage を execute する"
+    then: "get_note_lineage は開いているノートと置き換え先ノートを日付の昇順で返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-078
+    kind: functional
+    given: "ログイン済みの画面"
+    when: "エージェントが open_compare_view(A, B) を execute する"
+    then: "A と B を並べた比較ビューを表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-079
+    kind: functional
+    given: "proposed の提案 R"
+    when: "エージェントが request_relation_approval(R) を execute する"
+    then: "承認ダイアログを表示し、人間がクリックするまで R の state は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-080
+    kind: functional
+    given: "AC-079 の承認ダイアログを表示中"
+    when: "ページ内スクリプトから『はい』ボタンに element.click() を行う（isTrusted=false）"
+    then: "承認を拒否し、R の state は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-081
+    kind: functional
+    given: "AC-079 の承認ダイアログを表示中"
+    when: "美咲が『はい』をクリックする"
+    then: "R の state を confirmed に更新し、ツール結果に confirmed を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-082
+    kind: functional
+    given: "ログイン済みの画面"
+    when: "エージェントが draft_note(title, body) を execute する"
+    then: "エディタに title と body を表示し、ノートの件数は変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-083
+    kind: functional
+    given: "回答を表示している画面"
+    when: "エージェントが highlight_citation('[1]') を execute する"
+    then: "[1] の根拠チャンクの箇所をハイライト表示する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-084
+    kind: functional
+    given: "title が <img src=x onerror=window.__xss=1> のノート"
+    when: "エージェントが open_note でそのノートを開く"
+    then: "その文字列をテキストとして表示し、window.__xss は undefined のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0

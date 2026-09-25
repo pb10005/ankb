@@ -1,0 +1,171 @@
+# FEAT-002 — 要件の単一の正。実装・テスト・レビューはこれに従属する。
+# 出典: docs/instructions.md（ankb 実装指示書）§10 ステップ2 / §4 / §5
+#
+# 埋め方: 人間に質問する前に、AIが全項目を推測で埋め切ること。
+# 人間の仕事は白紙を埋めることではなく、埋まったものを否定・修正することにある。
+# 確信が持てない箇所は open_questions か assumptions に置き、空欄で残さない。
+id: FEAT-002
+title: "スキーマとRLS: ノートの公開範囲・編集権限・状態遷移をDBで強制する"
+status: draft # draft -> (spec-lint --gate freeze) -> frozen
+
+intent: "権限と有効性の判定を入口ごとの実装に任せると、Web UI・サーバMCP・WebMCP のどれか1つの抜けが情報漏洩になる。§4 のテーブルと §5 の権限モデルを Postgres の RLS とトリガーで強制し、どの入口から読んでも閲覧できないノートが1行も返らず、superseded への遷移が承認経由でしか起きない状態を作る。"
+
+out_of_scope:
+  - "リアルタイム共同編集（指示書 §11）"
+  - "外部サービス（Slack / Google Drive）からの自動取り込み（指示書 §11）"
+  - "view / edit より細かいロール（指示書 §11）"
+  - "ネイティブモバイルアプリ（指示書 §11）"
+  - "ノートの物理削除。v1 は status=archived のみ（指示書 §11）"
+  - "workspace を跨いだノート共有。note_share の共有先は同じ workspace のメンバーに限る（AS-006）"
+  - "権限の監査ログ（誰がいつ閲覧したか）"
+  - "note_share の permission 以外の細かい権限（コメントのみ）"
+
+assumptions:
+  - id: AS-004
+    statement: "RLS は Supabase の auth.uid() を基準に書く。閲覧可否は SQL 関数 can_view_note(note_id) / can_edit_note(note_id) に一本化し、notes・note_chunk・note_version・note_relation の各ポリシーはこの関数を呼ぶ"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-005
+    statement: "superseded への遷移と superseded_by の更新は note_relation の state 変更トリガー（SECURITY DEFINER）だけが行う。notes への直接 UPDATE で status=superseded にする操作はトリガーで拒否する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-006
+    statement: "workspace を跨いだ共有は許さない。note_share の共有先ユーザーは、ノートの workspace の member に限る（指示書 §12 の未決を既定値で仮決め）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-007
+    statement: "note_relation の state を confirmed / rejected に変える操作は、RPC resolve_relation(relation_id, decision) を通してのみ行う。DB は呼び出し元が人間かエージェントかを区別できないため、『エージェントは承認できない』はサーバMCP・WebMCP にこのツールを載せないことで担保する（FEAT-007 / FEAT-008）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+  - id: AS-008
+    statement: "visibility の変更はオーナーのみが行える。edit 共有されたユーザーは body・title を編集できるが visibility と note_share は変更できない"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
+
+open_questions: []
+
+acceptance:
+  - id: AC-006
+    kind: functional
+    given: "美咲が所有する visibility=private のノート"
+    when: "同じ workspace の健太のJWTで notes を SELECT する"
+    then: "0行を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-007
+    kind: functional
+    given: "美咲が所有し、健太にだけ note_share(permission=view) した visibility=shared のノート"
+    when: "健太と翔のJWTでそれぞれ SELECT する"
+    then: "健太には1行を返し、翔には0行を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-008
+    kind: functional
+    given: "workspace W の visibility=workspace のノート"
+    when: "W のメンバーと、W に属さないユーザーのJWTでそれぞれ SELECT する"
+    then: "メンバーには1行を返し、非メンバーには0行を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-009
+    kind: functional
+    given: "美咲のノートを健太に view で、翔に edit で共有している"
+    when: "健太と翔のJWTでそれぞれ body を UPDATE する"
+    then: "健太の UPDATE は0行更新で body が変わらず、翔の UPDATE は1行更新する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-010
+    kind: functional
+    given: "オーナー本人の active なノート"
+    when: "オーナーのJWTで status を superseded に直接 UPDATE する"
+    then: "エラーを返して拒否し、status は active のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-011
+    kind: functional
+    given: "active なノート A・B と、両方の編集権限を持つユーザー"
+    when: "note_relation(from=B, to=A, type=supersedes) の state を proposed から confirmed に変更する"
+    then: "A の status が superseded になり、A.superseded_by に B の id が保存される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-012
+    kind: functional
+    given: "AC-011 で A が superseded になった状態"
+    when: "その note_relation の state を rejected に変更する（置き換えの取り消し）"
+    then: "A の status が active に戻り、A.superseded_by が null に更新される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-013
+    kind: functional
+    given: "A・B のうち B だけ編集権限を持つユーザー"
+    when: "A↔B の proposed な note_relation の state を confirmed に変更する"
+    then: "エラーを返して拒否し、state は proposed のまま変わらない"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-014
+    kind: functional
+    given: "美咲の private ノート P と健太の workspace ノート Q の間の note_relation"
+    when: "P を閲覧できない健太のJWTで note_relation を SELECT する"
+    then: "その関係の行を0行返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-015
+    kind: functional
+    given: "version が1件のノート"
+    when: "編集権限を持つユーザーが body を更新する"
+    then: "更新前の body を持つ note_version の行が1件追加で保存される"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-016
+    kind: functional
+    given: "空のデータベース"
+    when: "シードスクリプトを実行する"
+    then: "出張規程・決済サービス選定・権限の3シナリオのノートを作成し、fixtures/ に定義した件数と一致する"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+
+  - id: AC-017
+    kind: functional
+    given: "どのユーザーのJWTも持たない anon ロール"
+    when: "notes / note_relation / note_chunk を SELECT する"
+    then: "3テーブルとも0行を返す"
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
