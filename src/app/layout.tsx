@@ -1,7 +1,8 @@
-// @covers AC-001, AC-002, AC-053
+// @covers AC-001, AC-002, AC-053, AC-072
 import type { Metadata } from "next";
 import "./globals.css";
 import { PendingBadge } from "./relations/pending-badge";
+import { WebMcpRegistrar } from "@/lib/webmcp/register";
 
 export const metadata: Metadata = {
   title: "ankb",
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PendingBadge />
         </header>
         {children}
+        <WebMcpRegistrar />
       </body>
     </html>
   );

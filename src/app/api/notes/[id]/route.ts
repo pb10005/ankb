@@ -1,9 +1,23 @@
-// @covers AC-021, AC-130
+// @covers AC-021, AC-075, AC-130
 // @assumption AS-062
 import { NextResponse } from "next/server";
-import { updateNote } from "@/core/notes";
+import { getNote, updateNote } from "@/core/notes";
 import { HTTP_STATUS } from "@/core/result";
 import { createClient } from "@/lib/supabase/server";
+
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ code: "UNAUTHENTICATED", message: "ログインが必要です" }, { status: 401 });
+
+  const res = await getNote(supabase, id);
+  // 閲覧できないノートは存在しないノートと同じ応答にする（AS-051 / AC-127）
+  if (!res || !res.ok) return NextResponse.json({ code: "NOT_FOUND", message: "見つかりませんでした" }, { status: 404 });
+  return NextResponse.json(res.value);
+}
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
