@@ -226,3 +226,11 @@ describe("LLM の失敗", () => {
     }
   });
 });
+
+describe("旧情報だけが残る場合", () => {
+  it("AS-071: 残った主張が kind=outdated だけなら not_found=true で、その主張は（旧情報）付きで answer に残る", async () => {
+    const { answer } = await askAs("misaki", Q, { claims: [{ text: "以前は上限が別の額だった。", note_ids: [NEW], kind: "outdated" }], not_found: false });
+    expect(answer.not_found).toBe(true);
+    expect(answer.answer).toContain("以前は上限が別の額だった。（旧情報）");
+  });
+});

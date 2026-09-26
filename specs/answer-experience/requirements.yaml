@@ -67,9 +67,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: playwright 2/2 pass。失敗する合成器でエラー文言の alert を表示し、回答リージョンと answer-text
-      が存在しないことを検証。ClaudeSynthesizer はあらゆる例外を UpstreamError
-      に変換し（src/core/synthesizer.ts:137-139）、actions.ts:25-30 はすべての例外を同じ文言に変換する
+    note: "回帰なし。playwright 2/2 pass: 失敗する合成器でエラー文言の alert を表示し、回答リージョンと answer-text
+      が無いことを検証。tests/db/answer.test.ts:220 で実 ClaudeSynthesizer が SDK の
+      APIConnectionTimeoutError / InternalServerError(500) を UpstreamError に変換し
+      ask が reject することを検証（synthesizer.ts:110-112）。actions.ts:25-30
+      はすべての例外を同じ文言に変換"
     evidence: e2e/ask.spec.ts:9
 
   - id: AC-046

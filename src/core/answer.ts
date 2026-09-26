@@ -122,8 +122,13 @@ export async function ask(client: SupabaseClient, question: string, deps: AskDep
   }
   // 契約を満たす主張が1件も残らなければ「見つからなかった」と返す（AC-106）。食い違いの併記だけの回答にはしない
   if (!lastCurrent) {
-    const r = notFound(result.conflicts);
-    return { ...r, outdated_mentions: [...outdated.values(), ...supersededMentions(superseded, outdated)] };
+    // 現行の答えは無いが、旧情報として示せる主張は「見つからなかった」に続けて残す
+    return {
+      ...notFound(result.conflicts),
+      answer: [NOT_FOUND_TEXT, ...paragraphs].join("\n\n"),
+      citations: citations.list(),
+      outdated_mentions: [...outdated.values(), ...supersededMentions(superseded, outdated)],
+    };
   }
 
   // 矛盾はどちらかに寄せず両論を併記する（AC-039 / AC-107）

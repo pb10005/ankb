@@ -48,7 +48,7 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-09-25"
   - id: AS-071
-    statement: "Answer 型（§7.3）に format（standard | timeline）を加え、経緯形式で答えたかどうかを返す。superseded のノートを根拠に含む claim は、現行のノートを併せて引いていても旧情報に降格し、answer に「（旧情報）」を付けて残し引用マーカーは付けない（根拠は outdated_mentions の note_id・タイトルで示す）。LLM が kind=outdated とした claim は根拠のマーカーを付けたうえで「（旧情報）」を付ける。superseded_context のノートは claim に引かれていなくても、not_found の場合も outdated_mentions に入れる。契約を満たす主張が1件も残らなければ、食い違いがあっても not_found=true とする"
+    statement: "Answer 型（§7.3）に format（standard | timeline）を加え、経緯形式で答えたかどうかを返す。superseded のノートを根拠に含む claim は、現行のノートを併せて引いていても旧情報に降格し、answer に「（旧情報）」を付けて残し引用マーカーは付けない（根拠は outdated_mentions の note_id・タイトルで示す）。LLM が kind=outdated とした claim は根拠のマーカーを付けたうえで「（旧情報）」を付ける。superseded_context のノートは claim に引かれていなくても、not_found の場合も outdated_mentions に入れる。現行の主張が1件も残らなければ、食い違いがあっても not_found=true とし、旧情報として示せる主張は『見つからなかった』の文に続けて残す"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -157,7 +157,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: 旧規程を current 引用した claim が citations に入らず outdated_mentions に入ることを検証
+    note: 回帰なし（vitest 20/20）。:86 で旧規程のみを current 引用した claim が citations に入らず outdated_mentions に claim text 付きで入ることを検証。:202 で現行+旧規程を併せて引いた claim も旧情報に降格し、マーカー無し・citations に OLD 無しを検証。旧規程を current 引用したのは answer.ts:112-115 で降格される
     evidence: tests/db/answer.test.ts:86
 
   - id: AC-105
@@ -180,11 +180,11 @@ acceptance:
     then: "not_found=true で citations が空配列の Answer を返す"
     priority: must
     verify: test
-    status: fail
+    status: pass
     attempts: 1
     verified_at: 2026-09-26
-    note: "src/core/answer.ts:119 の条件が !lastCurrent && conflicts.length===0 のため、検索結果に conflicts がある場合は全 claim を捨てても not_found=false になり、citations に conflicts の両ノートが入る。再現: 美咲・『出張の宿泊費の上限はいくら？』・stub が note_ids=[] と捏造 id の claim だけを返す → not_found=false、citations=[travel-memo, travel-new]、answer は食い違いの併記文だけ。tests/db/answer.test.ts:100 は conflicts が出ない質問を意図的に選んでいて、この境界を踏んでいない"
-    evidence: src/core/answer.ts:119
+    note: "vitest db answer.test.ts 20/20 pass。前回の境界（美咲・宿泊費質問で conflicts あり、stub が note_ids=[] と捏造 id の claim のみ）で conflicts.length>0 を前提アサートしたうえで not_found=true かつ citations=[] を検証。src/core/answer.ts:124 の条件が !lastCurrent に変わり conflicts の有無に依存しない。conflicts 無しの場合も :100 で検証"
+    evidence: tests/db/answer.test.ts:195
 
   - id: AC-107
     kind: functional
@@ -235,5 +235,5 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: not_found=true、answer が近い情報の接頭辞で始まり、citations が検索上位3ノートと一致し、各 marker が answer に含まれることを検証
+    note: 回帰なし（vitest 20/20）。not_found=true、answer が NEAR_INFO_PREFIX で始まること、citations が検索上位3ノートと順序込みで一致すること、各 marker が answer に含まれることを検証（answer.ts:86-92）
     evidence: tests/db/answer.test.ts:120
