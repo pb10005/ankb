@@ -1,23 +1,12 @@
 "use client";
-// @covers AC-045, AC-046, AC-076, AC-083
-import { Fragment, useActionState, useEffect, useRef, useState } from "react";
+// @covers AC-045, AC-046, AC-083
+import { Fragment, useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Answer, Citation } from "@/core/answer";
-import { webMcpBridge } from "@/lib/webmcp/bridge";
 import { askAction, type AskState } from "./actions";
 
 /** answer 中の [n] をクリックできるボタンにする */
-function AnswerText({
-  answer,
-  onCite,
-  highlighted,
-  markerRefs,
-}: {
-  answer: Answer;
-  onCite: (c: Citation) => void;
-  highlighted: string | null;
-  markerRefs: React.MutableRefObject<Map<string, HTMLButtonElement>>;
-}) {
+function AnswerText({ answer, onCite }: { answer: Answer; onCite: (c: Citation) => void }) {
   const byMarker = new Map(answer.citations.map((c) => [c.marker, c]));
   return (
     <div className="answer-text" data-testid="answer-text">
@@ -25,21 +14,12 @@ function AnswerText({
         <p key={i}>
           {para.split(/(\[\d+\])/).map((part, j) => {
             const c = byMarker.get(part);
-            if (!c) return <Fragment key={j}>{part}</Fragment>;
-            return (
-              <button
-                key={j}
-                ref={(el) => {
-                  if (el) markerRefs.current.set(part, el);
-                  else markerRefs.current.delete(part);
-                }}
-                type="button"
-                className={`marker${highlighted === part ? " marker-highlighted" : ""}`}
-                aria-label={`引用${part}: ${c.title}`}
-                onClick={() => onCite(c)}
-              >
+            return c ? (
+              <button key={j} type="button" className="marker" aria-label={`引用${part}: ${c.title}`} onClick={() => onCite(c)}>
                 {part}
               </button>
+            ) : (
+              <Fragment key={j}>{part}</Fragment>
             );
           })}
         </p>
@@ -51,32 +31,21 @@ function AnswerText({
 export function AskView() {
   const [state, action, pending] = useActionState<AskState, FormData>(askAction, { question: "", answer: null, error: null });
   const [cited, setCited] = useState<Citation | null>(null);
-  const [highlighted, setHighlighted] = useState<string | null>(null);
-  const markerRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [highlighted, setHighlighted] = useState(false);
   const answer = state.answer;
-
-  // WebMCP の get_current_context 用に、直近の質問を画面の文脈として共有する（AC-076）
+  // エージェントの highlight_citation（WebMCP）
   useEffect(() => {
-    webMcpBridge.setCurrentQuery(state.question || null);
-    return () => webMcpBridge.setCurrentQuery(null);
-  }, [state.question]);
-
-  // WebMCP の highlight_citation ツールから、表示中の引用マーカーをハイライトできるようにする（AC-083）
-  useEffect(() => {
-    if (!answer) return;
-    return webMcpBridge.registerCitationHandler(
-      answer.citations.map((c) => c.marker),
-      (marker) => {
-        const c = answer.citations.find((cc) => cc.marker === marker);
-        if (!c) return;
-        setCited(c);
-        setHighlighted(marker);
-        markerRefs.current.get(marker)?.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => setHighlighted((h) => (h === marker ? null : h)), 2000);
-      },
-    );
+    const onHighlight = (e: Event) => {
+      const { marker, respond } = (e as CustomEvent<{ marker: string; respond: (v: boolean) => void }>).detail;
+      const c = answer?.citations.find((x) => x.marker === marker);
+      if (!c) return respond(false);
+      setCited(c);
+      setHighlighted(true);
+      respond(true);
+    };
+    window.addEventListener("ankb:highlight-citation", onHighlight);
+    return () => window.removeEventListener("ankb:highlight-citation", onHighlight);
   }, [answer]);
-
   return (
     <>
       <form action={action} className="stack" aria-label="質問フォーム" onSubmit={() => setCited(null)}>
@@ -97,10 +66,16 @@ export function AskView() {
 
       {answer && (
         <section aria-label="回答" className="answer">
-          <AnswerText answer={answer} onCite={setCited} highlighted={highlighted} markerRefs={markerRefs} />
+          <AnswerText
+            answer={answer}
+            onCite={(c) => {
+              setCited(c);
+              setHighlighted(false);
+            }}
+          />
 
           {cited && (
-            <aside aria-label="根拠" className="citation-panel">
+            <aside aria-label="根拠" className={highlighted ? "citation-panel highlighted" : "citation-panel"} data-highlighted={highlighted ? "true" : undefined}>
               <h3>
                 {cited.marker} <Link href={`/notes/${cited.note_id}`}>{cited.title}</Link>
               </h3>

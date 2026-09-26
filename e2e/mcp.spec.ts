@@ -2,12 +2,13 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import { closeDb, db, indexSeeded, noteInDb, seedNote, seedShare, USER_ID, PASSWORD, type UserName } from "./helpers";
+import { closeDb, db, indexSeeded, noteInDb, seedNote, seedShare, USER_ID, PASSWORD, type UserName, resetAskQuota } from "./helpers";
 import { BASE, call, errorCode, expiredToken, mcpClient, tokenFor } from "./mcp-helpers";
 import { AnswerSchema, SearchResultSchema, TOOL_NAMES } from "../src/mcp/server";
 import { loadScenarios, loadWorkspaces, noteId } from "../src/seed/fixtures";
 
 test.afterAll(closeDb);
+test.beforeEach(resetAskQuota);
 test.describe.configure({ timeout: 120_000 });
 
 const tok = () => randomUUID().replace(/-/g, "").slice(0, 10);

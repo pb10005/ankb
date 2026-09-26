@@ -139,3 +139,21 @@ acceptance:
       mError変換自体はsrc/core/synthesizer.ts:110-111。npx playwright test
       e2e/mcp.spec.ts: 13 passed (2026-09-26)"
     evidence: e2e/mcp.spec.ts:160
+  - id: AC-140
+    kind: functional
+    given: 美咲がログインしている
+    when: 検索画面 /search で旧版と新版のあるテーマ（例:『宿泊費』）を検索する
+    then: hits のタイトルを検索結果に一覧し、possibly_outdated
+      のヒットには『更新されている可能性』のバッジを付け、superseded_context
+      のノートは検索結果とは別の『古い情報』欄に『旧情報』のバッジ付きで表示する
+    priority: should
+    verify: test
+    status: pass
+    attempts: 0
+    verified_at: 2026-09-26
+    note: "/search の『検索結果』リストに旧/新ノートのタイトルが出て(22-23,31)、possibly_outdated
+      の旧手順にだけ『更新されている可能性』バッジ(22,24)。宿泊費では travel-old
+      が『古い情報』見出しの別欄(32-33)に『旧情報』バッジ付き(34)で、検索結果には出ない(35)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts e2e/search.spec.ts: 22
+      passed (2026-09-26)"
+    evidence: e2e/search.spec.ts:22

@@ -1,8 +1,8 @@
-// @covers AC-002, AC-004, AC-019, AC-046
+// @covers AC-002, AC-004, AC-019, AC-046, AC-128
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { logout } from "./actions";
+import { LogoutButton } from "./logout-button";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -16,11 +16,7 @@ export default async function DashboardPage() {
     <main>
       <header className="bar">
         <h1>ダッシュボード</h1>
-        <form action={logout}>
-          <button type="submit" className="secondary">
-            ログアウト
-          </button>
-        </form>
+        <LogoutButton />
       </header>
       <p>
         ログイン中: <span data-testid="current-user-email">{user.email}</span>
@@ -30,6 +26,9 @@ export default async function DashboardPage() {
       </p>
       <p>
         <Link href="/ask">質問する</Link>
+      </p>
+      <p>
+        <Link href="/search">検索する</Link>
       </p>
     </main>
   );
