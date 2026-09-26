@@ -11,6 +11,8 @@ const PORT = Number(process.env.PORT ?? 3000);
 
 export default defineConfig({
   testDir: "e2e",
+  // 実 API を使う計測は playwright.eval.config.ts で別に回す
+  testIgnore: ["eval/**"],
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -25,5 +27,7 @@ export default defineConfig({
     url: `http://127.0.0.1:${PORT}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    // 決定的な合成器を使う（src/core/test-synthesizers.ts / AS-072）
+    env: { ANKB_TEST_MODE: "1" },
   },
 });

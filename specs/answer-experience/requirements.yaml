@@ -29,6 +29,11 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-072
+    statement: "Web UI の E2E テストでは、環境変数 ANKB_TEST_MODE=1 のときだけ決定的な合成器（資料の1行目を主張として返す Echo と、常に失敗する Failing。後者は cookie ankb-test-synth=fail で選ぶ）を使う。ANKB_TEST_MODE が無い本番では Claude を呼ぶ"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
 open_questions: []
 

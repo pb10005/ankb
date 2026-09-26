@@ -5,6 +5,7 @@
 // @assumption AS-037
 // @assumption AS-039
 // @assumption AS-070
+// @assumption AS-073
 // 検索パイプライン（指示書 §6.1）。Web UI・サーバMCP・WebMCP のすべてがこの関数を通す。
 //   質問 → クエリ展開 → ハイブリッド検索（全文 + ベクトル、RLS 下）→ resolveCurrent() → 再ランキング → SearchResult
 // client は質問者のセッションで作った Supabase クライアント。サービスロールは使わない（§5.2-2）。
@@ -64,13 +65,21 @@ type NoteMeta = {
 };
 type RelationRow = { from_note_id: string; to_note_id: string; type: string; state: "proposed" | "confirmed"; rationale: string };
 
-/** 各語をフレーズとして引用した PGroonga のクエリ（空白区切りは AND。OR などの演算子もリテラル扱い） */
+/**
+ * 質問から検索語を取り出す（AS-073）。漢字・カタカナ・英数字の連続（2文字以上）を語とし、
+ * ひらがな（助詞・活用語尾）で区切る。語が取れない質問（ひらがなだけ等）は質問全体を1語とする。
+ */
+export function extractTerms(query: string): string[] {
+  const terms = query.match(/[\p{Script=Han}\p{Script=Katakana}ー々〆A-Za-z0-9０-９Ａ-Ｚａ-ｚ+#._-]{2,}/gu) ?? [];
+  const uniq = [...new Set(terms)];
+  return uniq.length > 0 ? uniq : [query.trim()].filter((q) => q !== "");
+}
+
+/** 各語をフレーズとして引用し OR で結んだ PGroonga のクエリ（OR などの演算子もリテラル扱い）。一致した語が多いほどスコアが高い */
 export function toPgroongaQuery(query: string): string {
-  return query
-    .split(/\s+/)
-    .filter((w) => w !== "")
+  return extractTerms(query)
     .map((w) => `"${w.replace(/["\\]/g, (c) => `\\${c}`)}"`)
-    .join(" ");
+    .join(" OR ");
 }
 
 export async function searchKnowledge(client: SupabaseClient, query: string, deps: SearchDeps = {}): Promise<SearchResult> {

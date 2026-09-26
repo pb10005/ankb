@@ -30,3 +30,8 @@ form.inline { display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap; }
 .note-body table { border-collapse: collapse; }
 .note-body th, .note-body td { border: 1px solid var(--border); padding: 0.3rem 0.6rem; }
 .version-body { white-space: pre-wrap; background: #f5f5f4; padding: 0.75rem; border-radius: 6px; }
+.answer { margin-top: 1.5rem; display: grid; gap: 1rem; }
+.answer-text p { line-height: 1.8; }
+button.marker { padding: 0 0.2rem; background: transparent; color: var(--accent); border: 0; font-size: 0.85em; vertical-align: super; cursor: pointer; }
+.citation-panel, .conflicts, .outdated { border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
+.conflicts { border-color: #d97706; }

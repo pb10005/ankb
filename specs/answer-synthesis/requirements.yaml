@@ -47,6 +47,11 @@ assumptions:
     status: confirmed
     owner: pb10005
     resolve_by: "2026-09-25"
+  - id: AS-071
+    statement: "Answer 型（§7.3）に format（standard | timeline）を加え、経緯形式で答えたかどうかを返す。旧情報だけを根拠にした claim は answer に「（旧情報）」を付けて残し、引用マーカーは付けない。superseded_context のノートは claim に引かれていなくても outdated_mentions に入れる"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
 open_questions: []
 

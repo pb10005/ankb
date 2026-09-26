@@ -24,7 +24,8 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "seed": "tsx src/seed/seed.ts",
-    "test:eval": "vitest run --project eval"
+    "test:eval": "vitest run --project eval",
+    "test:e2e:eval": "playwright test -c playwright.eval.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

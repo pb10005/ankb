@@ -1,5 +1,6 @@
 // @covers AC-027, AC-028, AC-029, AC-030, AC-031, AC-032, AC-033, AC-035, AC-036, AC-100, AC-102, AC-103
 import { afterAll, describe, expect, it } from "vitest";
+import { randomUUID } from "node:crypto";
 import { admin, asUser, closeAdmin, createNote, relate, share, type UserName } from "../helpers/db";
 import { expectedVisibility, indexNote, noteIds, searchAs, stubDeps } from "../helpers/search";
 import { noteId } from "../../src/seed/fixtures";
@@ -10,7 +11,9 @@ import type { QueryExpander } from "../../src/core/query-expansion";
 
 afterAll(closeAdmin);
 
-const uniq = (label: string) => `${label}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+// テスト間の識別子。時刻を使うと近い時刻のトークンが長い共通部分を持ち、スタブ embedding（文字バイグラム）で
+// 別テストのノートが類似度の下限を超えて混ざるので、乱数だけで作る
+const uniq = (label: string) => `${label}${randomUUID().replace(/-/g, "").slice(0, 16)}`;
 
 describe("resolveCurrent（§6.1）", () => {
   it("AC-027: 出張規程シナリオで旧規程は hits に含まれず superseded_context に改定通知の id 付きで返る", async () => {

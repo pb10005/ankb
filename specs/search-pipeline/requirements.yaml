@@ -86,6 +86,11 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-073
+    statement: "全文検索の語は、質問から漢字・カタカナ・英数字が2文字以上続く部分を取り出したもの（ひらがなの助詞・活用語尾で区切る）とし、各語をフレーズとして OR で結ぶ。一致した語が多いほどスコアが高い。語が取れない質問は質問全体を1語とする。LLM のクエリ展開が使えないときも日本語の文章の質問で全文検索が当たるようにするため"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-09"
 
 open_questions:
   - id: OQ-001

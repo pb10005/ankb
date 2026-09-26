@@ -1,4 +1,4 @@
-// @covers AC-002, AC-004, AC-019
+// @covers AC-002, AC-004, AC-019, AC-046
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -27,6 +27,9 @@ export default async function DashboardPage() {
       </p>
       <p>
         <Link href="/notes">ノート一覧</Link>
+      </p>
+      <p>
+        <Link href="/ask">質問する</Link>
       </p>
     </main>
   );
