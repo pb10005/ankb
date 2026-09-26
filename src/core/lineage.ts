@@ -1,5 +1,4 @@
 // @covers AC-068, AC-124
-// @assumption AS-078
 // ノート単位の関係情報（get_note / get_note_lineage 用）。閲覧できないノートは返さない（§5.2-3）
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Conflict } from "./search";

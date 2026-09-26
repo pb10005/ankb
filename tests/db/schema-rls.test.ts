@@ -186,7 +186,7 @@ describe("DB の構成", () => {
        where n.nspname = 'public' and p.prosecdef order by 1`,
     );
     expect(rows.map((r) => r.proname).sort()).toEqual(
-      ["can_edit_note", "can_view_note", "note_relation_after_state_change", "resolve_relation"].sort(),
+      ["can_edit_note", "can_view_note", "note_lineage", "note_relation_after_state_change", "resolve_relation"].sort(),
     );
     for (const r of rows) {
       expect((r.proconfig ?? []).some((c: string) => c.startsWith("search_path="))).toBe(true);

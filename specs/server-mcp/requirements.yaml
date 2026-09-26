@@ -8,7 +8,9 @@ id: FEAT-007
 title: "サーバMCP: 外部エージェントがユーザー本人の権限で読み書きする"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "翔が Claude Code での実装中に仕様や設計判断を参照できるように、ankb を Streamable HTTP のMCPサーバとして公開する。外部エージェントはOAuthで得たユーザー本人のトークンで動き、Web UI と同じ検索関数・同じRLSを通る。承認・公開範囲の変更・削除はツールとして提供しない。"
+intent: "翔が Claude Code での実装中に仕様や設計判断を参照できるように、ankb を Streamable HTTP
+  のMCPサーバとして公開する。外部エージェントはOAuthで得たユーザー本人のトークンで動き、Web UI
+  と同じ検索関数・同じRLSを通る。承認・公開範囲の変更・削除はツールとして提供しない。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -23,12 +25,18 @@ out_of_scope:
 
 assumptions:
   - id: AS-024
-    statement: "MCPエンドポイントは Next.js の Route Handler（/mcp）として同じアプリに置き、@modelcontextprotocol/sdk の Streamable HTTP をステートレスで動かす。認可サーバは Supabase Auth の OAuth 2.1 サーバ機能を使い、ankb はリソースサーバとして Protected Resource Metadata を公開してトークン（Supabase の JWT）を検証する。受け取ったJWTをそのまま Supabase クライアントに渡し、RLS を効かせる"
+    statement: "MCPエンドポイントは Next.js の Route
+      Handler（/mcp）として同じアプリに置き、@modelcontextprotocol/sdk の Streamable HTTP
+      をステートレスで動かす。認可サーバは Supabase Auth の OAuth 2.1 サーバ機能を使い、ankb はリソースサーバとして
+      Protected Resource Metadata を公開してトークン（Supabase の JWT）を検証する。受け取ったJWTをそのまま
+      Supabase クライアントに渡し、RLS を効かせる"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-025
-    statement: "エラーは isError: true の結果として返し、先頭テキストを JSON {code, message} とする。code は VALIDATION_ERROR | NOT_FOUND | FORBIDDEN | CONFLICT。閲覧できないノートは FORBIDDEN ではなく NOT_FOUND を返す（存在を漏らさない）"
+    statement: "エラーは isError: true の結果として返し、先頭テキストを JSON {code, message} とする。code は
+      VALIDATION_ERROR | NOT_FOUND | FORBIDDEN | CONFLICT。閲覧できないノートは FORBIDDEN
+      ではなく NOT_FOUND を返す（存在を漏らさない）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -38,23 +46,34 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-050
-    statement: "MCP の create_note は visibility を受け付けず常に private で作成する。status は draft（既定）または active を受け付ける。update_note は title・body・effective_from と status の draft→active だけを受け付け、visibility・archived・superseded の指定は VALIDATION_ERROR とする（公開範囲の変更と削除は人間がUIで行う: §7.1）"
+    statement: "MCP の create_note は visibility を受け付けず常に private で作成する。status は
+      draft（既定）または active を受け付ける。update_note は title・body・effective_from と
+      status の draft→active だけを受け付け、visibility・archived・superseded の指定は
+      VALIDATION_ERROR とする（公開範囲の変更と削除は人間がUIで行う: §7.1）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-054
-    statement: "ask はユーザーあたり1時間20回までとし、超えた場合は RATE_LIMITED を返す（LLM 利用料の暴走を防ぐ）。上限は環境変数 ANKB_ASK_RATE_LIMIT で変更できる"
+    statement: "ask はユーザーあたり1時間20回までとし、超えた場合は RATE_LIMITED を返す（LLM
+      利用料の暴走を防ぐ）。上限は環境変数 ANKB_ASK_RATE_LIMIT で変更できる"
     status: confirmed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-059
-    statement: "OAuth 経由で発行されたトークンを JWT クレーム client_id で識別し、resolve_relation・visibility の変更・note_share と member の書き込みを DB 側（RLS / RPC）で拒否する。Supabase Auth の OAuth 2.1 サーバが Claude Code の接続に必要な動的クライアント登録に対応していない場合は、ankb 自身が MCP 用の OAuth 認可エンドポイントを持ち、Supabase の JWT を client_id クレーム付きで発行し直す（OQ-003 を 2026-09-25 に人間が承認。§0 の権限に関わる変更）"
+    statement: "OAuth 経由で発行されたトークンを JWT クレーム client_id
+      で識別し、resolve_relation・visibility の変更・note_share と member の書き込みを DB 側（RLS /
+      RPC）で拒否する。Supabase Auth の OAuth 2.1 サーバが Claude Code
+      の接続に必要な動的クライアント登録に対応していない場合は、ankb 自身が MCP 用の OAuth 認可エンドポイントを持ち、Supabase の
+      JWT を client_id クレーム付きで発行し直す（OQ-003 を 2026-09-25 に人間が承認。§0 の権限に関わる変更）"
     status: confirmed
     owner: pb10005
     resolve_by: "2026-09-25"
   - id: AS-078
-    statement: "get_note_lineage は SECURITY DEFINER の関数 public.note_lineage で置き換えの連鎖を両方向にたどり、呼び出し者が閲覧できるノートだけを返す（閲覧できない中間ノートは id・タイトルを出さずに飛ばす）。RLS の下では閲覧できない中間ノートとの関係が見えず、連鎖の先をたどれないため。これにより FEAT-002 AC-091 の SECURITY DEFINER 許可リストに note_lineage を加える必要がある（人間の承認待ち）"
-    status: assumed
+    statement: "get_note_lineage は SECURITY DEFINER の関数 public.note_lineage
+      で置き換えの連鎖を両方向にたどり、呼び出し者が閲覧できるノートだけを返す（閲覧できない中間ノートは id・タイトルを出さずに飛ばす）。RLS
+      の下では閲覧できない中間ノートとの関係が見えず、連鎖の先をたどれないため。FEAT-002 AC-091 の許可リストに note_lineage
+      を加えた（2026-09-26 人間承認）"
+    status: confirmed
     owner: pb10005
     resolve_by: "2026-10-10"
 
@@ -65,11 +84,17 @@ acceptance:
     kind: functional
     given: "OAuthで認可済みの翔のトークン"
     when: "tools/list を呼ぶ"
-    then: "search_knowledge / ask / get_note / get_note_lineage / list_pending_relations / create_note / update_note / propose_relation の8件だけを返す"
+    then: "search_knowledge / ask / get_note / get_note_lineage /
+      list_pending_relations / create_note / update_note / propose_relation
+      の8件だけを返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "実OAuthトークンで tools/list、8件の名前集合が完全一致（余分なし）。npx playwright test
+      e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:18
 
   - id: AC-062
     kind: functional
@@ -94,7 +119,8 @@ acceptance:
   - id: AC-064
     kind: functional
     given: "AC-063 で作成した提案"
-    when: "翔のトークンで resolve_relation 相当の操作（update_note で status=superseded、存在しないツール名 resolve_relation の呼び出し）を試みる"
+    when: "翔のトークンで resolve_relation 相当の操作（update_note で status=superseded、存在しないツール名
+      resolve_relation の呼び出し）を試みる"
     then: "いずれもエラーを返し、提案の state は proposed のまま変わらない"
     priority: must
     verify: test
@@ -103,9 +129,11 @@ acceptance:
 
   - id: AC-065
     kind: functional
-    given: "(a) Authorization ヘッダ無し (b) 有効期限切れのJWT (c) 署名が不正なJWT (d) Web UI のログインで得たセッションJWT"
+    given: "(a) Authorization ヘッダ無し (b) 有効期限切れのJWT (c) 署名が不正なJWT (d) Web UI
+      のログインで得たセッションJWT"
     when: "それぞれで POST /mcp を送る"
-    then: "4ケースとも 401 と Protected Resource Metadata の URL を含む WWW-Authenticate ヘッダを返し、ツールを実行しない"
+    then: "4ケースとも 401 と Protected Resource Metadata の URL を含む WWW-Authenticate
+      ヘッダを返し、ツールを実行しない"
     priority: must
     verify: test
     status: pending
@@ -115,7 +143,8 @@ acceptance:
     kind: functional
     given: "翔のトークン"
     when: "create_note を visibility・status を指定せずに呼び、続けて visibility=workspace を指定して呼ぶ"
-    then: "1回目は visibility=private / status=draft のノートを作成し、2回目は VALIDATION_ERROR を返してノートを作成しない"
+    then: "1回目は visibility=private / status=draft のノートを作成し、2回目は VALIDATION_ERROR
+      を返してノートを作成しない"
     priority: must
     verify: test
     status: pending
@@ -144,7 +173,8 @@ acceptance:
   - id: AC-069
     kind: functional
     given: "出張規程シナリオと美咲のセッション"
-    when: "同じクエリで Web UI の検索API・サーバMCP の search_knowledge・WebMCP の search_knowledge を呼ぶ"
+    when: "同じクエリで Web UI の検索API・サーバMCP の search_knowledge・WebMCP の search_knowledge
+      を呼ぶ"
     then: "3つの入口の結果のうち hits / superseded_context / conflicts が一致する"
     priority: must
     verify: test
@@ -164,7 +194,8 @@ acceptance:
   - id: AC-071
     kind: functional
     given: "README の接続手順"
-    when: "Claude Code に `claude mcp add --transport http` で ankb を登録し、OAuth のログインを完了する"
+    when: "Claude Code に `claude mcp add --transport http` で ankb を登録し、OAuth
+      のログインを完了する"
     then: "Claude Code の search_knowledge 呼び出しが SearchResult を返す"
     priority: must
     verify: manual
@@ -175,7 +206,8 @@ acceptance:
   - id: AC-120
     kind: functional
     given: "翔が両方のノートの編集権限を持つ proposed の提案 R と、OAuth で得た翔のアクセストークン"
-    when: "そのトークンで Supabase の REST API から rpc/resolve_relation(R, confirm) と notes の visibility 更新を直接呼ぶ"
+    when: "そのトークンで Supabase の REST API から rpc/resolve_relation(R, confirm) と notes の
+      visibility 更新を直接呼ぶ"
     then: "両方ともエラーを返して拒否し、R は proposed、visibility は変わらない"
     priority: must
     verify: test
@@ -186,7 +218,8 @@ acceptance:
     kind: functional
     given: "翔のトークン"
     when: "tools/list を呼び、search_knowledge と ask を実行する"
-    then: "8ツールすべてに outputSchema を含み、search_knowledge は SearchResult 型、ask は Answer 型（§7.3）のスキーマ検証を通る structuredContent を返す"
+    then: "8ツールすべてに outputSchema を含み、search_knowledge は SearchResult 型、ask は Answer
+      型（§7.3）のスキーマ検証を通る structuredContent を返す"
     priority: must
     verify: test
     status: pending
@@ -196,7 +229,8 @@ acceptance:
     kind: functional
     given: "active なノート X と、X に contradicts(proposed) で結ばれた閲覧可能なノート Y"
     when: "get_note(X) を呼ぶ"
-    then: "status・possibly_outdated と conflicts:[{note_ids:[X,Y], relation_state:'proposed'}] を含む structuredContent を返す"
+    then: "status・possibly_outdated と conflicts:[{note_ids:[X,Y],
+      relation_state:'proposed'}] を含む structuredContent を返す"
     priority: must
     verify: test
     status: pending

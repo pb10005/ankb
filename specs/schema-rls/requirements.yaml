@@ -225,7 +225,7 @@ acceptance:
     kind: functional
     given: "マイグレーション適用後のDB"
     when: "pg_proc から SECURITY DEFINER の関数を列挙する"
-    then: "許可リスト（can_view_note / can_edit_note / resolve_relation / 状態遷移トリガー関数）に一致し、全関数に search_path の設定を含む"
+    then: "許可リスト（can_view_note / can_edit_note / resolve_relation / 状態遷移トリガー関数 / note_lineage）に一致し、全関数に search_path の設定を含む"
     priority: must
     verify: test
     status: pass
