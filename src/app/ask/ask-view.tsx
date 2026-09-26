@@ -1,6 +1,6 @@
 "use client";
-// @covers AC-045, AC-046
-import { Fragment, useActionState, useState } from "react";
+// @covers AC-045, AC-046, AC-083
+import { Fragment, useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Answer, Citation } from "@/core/answer";
 import { askAction, type AskState } from "./actions";
@@ -31,7 +31,21 @@ function AnswerText({ answer, onCite }: { answer: Answer; onCite: (c: Citation) 
 export function AskView() {
   const [state, action, pending] = useActionState<AskState, FormData>(askAction, { question: "", answer: null, error: null });
   const [cited, setCited] = useState<Citation | null>(null);
+  const [highlighted, setHighlighted] = useState(false);
   const answer = state.answer;
+  // エージェントの highlight_citation（WebMCP）
+  useEffect(() => {
+    const onHighlight = (e: Event) => {
+      const { marker, respond } = (e as CustomEvent<{ marker: string; respond: (v: boolean) => void }>).detail;
+      const c = answer?.citations.find((x) => x.marker === marker);
+      if (!c) return respond(false);
+      setCited(c);
+      setHighlighted(true);
+      respond(true);
+    };
+    window.addEventListener("ankb:highlight-citation", onHighlight);
+    return () => window.removeEventListener("ankb:highlight-citation", onHighlight);
+  }, [answer]);
   return (
     <>
       <form action={action} className="stack" aria-label="質問フォーム" onSubmit={() => setCited(null)}>
@@ -52,10 +66,16 @@ export function AskView() {
 
       {answer && (
         <section aria-label="回答" className="answer">
-          <AnswerText answer={answer} onCite={setCited} />
+          <AnswerText
+            answer={answer}
+            onCite={(c) => {
+              setCited(c);
+              setHighlighted(false);
+            }}
+          />
 
           {cited && (
-            <aside aria-label="根拠" className="citation-panel">
+            <aside aria-label="根拠" className={highlighted ? "citation-panel highlighted" : "citation-panel"} data-highlighted={highlighted ? "true" : undefined}>
               <h3>
                 {cited.marker} <Link href={`/notes/${cited.note_id}`}>{cited.title}</Link>
               </h3>

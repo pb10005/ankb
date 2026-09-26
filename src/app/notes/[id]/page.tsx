@@ -1,4 +1,4 @@
-// @covers AC-018, AC-020, AC-024, AC-025, AC-026, AC-131, AC-138, AC-049, AC-052, AC-112
+// @covers AC-018, AC-020, AC-024, AC-025, AC-026, AC-131, AC-138, AC-049, AC-052, AC-112, AC-075, AC-084
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -8,6 +8,7 @@ import { PERMISSION_LABEL, STATUS_LABEL, VISIBILITY_LABEL, type Visibility } fro
 import { requireUser } from "@/lib/session";
 import { proposalsForNote } from "@/core/relations";
 import { ProposalBanner } from "../../relations/proposal-banner";
+import { PageContext } from "@/webmcp/page-context";
 import { archiveNoteAction, publishNoteAction, setShareAction, setVisibilityAction } from "../actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -42,6 +43,7 @@ export default async function NotePage({
       <p>
         <Link href="/notes">← ノート一覧</Link>
       </p>
+      <PageContext note_id={note.id} title={note.title} />
       <h1>{note.title}</h1>
       {error && ERROR_MESSAGES[error] && (
         <p role="alert" className="error">

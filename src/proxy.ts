@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/supabase/env";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/notes", "/ask", "/inbox", "/compare"];
+const PROTECTED_PREFIXES = ["/dashboard", "/notes", "/ask", "/inbox", "/compare", "/search"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

@@ -25,6 +25,11 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-082
+    statement: "承認ダイアログは同時に1つだけ表示する。表示中に request_relation_approval が再度呼ばれた場合はダイアログを出さず {code: BUSY} を返し、提案は proposed のまま"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-10"
 
 open_questions: []
 
