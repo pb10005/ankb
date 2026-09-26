@@ -8,7 +8,9 @@ id: FEAT-002
 title: "スキーマとRLS: ノートの閲覧・編集権限をDBで強制する"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "権限と有効性の判定を入口ごとの実装に任せると、Web UI・サーバMCP・WebMCP のどれか1つの抜けが情報漏洩になる。§4 のテーブルと §5 の権限モデルを Postgres の RLS とトリガーで強制し、どの入口から読んでも閲覧できないノートが1行も返らず、superseded への遷移が承認経由でしか起きない状態を作る。"
+intent: "権限と有効性の判定を入口ごとの実装に任せると、Web UI・サーバMCP・WebMCP のどれか1つの抜けが情報漏洩になる。§4 のテーブルと
+  §5 の権限モデルを Postgres の RLS とトリガーで強制し、どの入口から読んでも閲覧できないノートが1行も返らず、superseded
+  への遷移が承認経由でしか起きない状態を作る。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -22,42 +24,57 @@ out_of_scope:
 
 assumptions:
   - id: AS-004
-    statement: "RLS は Supabase の auth.uid() を基準に書く。閲覧可否は SQL 関数 can_view_note(note_id) / can_edit_note(note_id) に一本化し、notes・note_chunk・note_version・note_relation の各ポリシーはこの関数を呼ぶ"
+    statement: "RLS は Supabase の auth.uid() を基準に書く。閲覧可否は SQL 関数
+      can_view_note(note_id) / can_edit_note(note_id)
+      に一本化し、notes・note_chunk・note_version・note_relation の各ポリシーはこの関数を呼ぶ"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-005
-    statement: "superseded への遷移と superseded_by の更新は note_relation の state 変更トリガー（SECURITY DEFINER）だけが行う。notes への直接 UPDATE で status=superseded にする操作はトリガーで拒否する"
+    statement: "superseded への遷移と superseded_by の更新は note_relation の state
+      変更トリガー（SECURITY DEFINER）だけが行う。notes への直接 UPDATE で status=superseded
+      にする操作はトリガーで拒否する"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-006
-    statement: "workspace を跨いだ共有は許さない。note_share の共有先ユーザーは、ノートの workspace の member に限る（指示書 §12 の未決を既定値で仮決め）"
+    statement: "workspace を跨いだ共有は許さない。note_share の共有先ユーザーは、ノートの workspace の member
+      に限る（指示書 §12 の未決を既定値で仮決め）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-007
-    statement: "note_relation の state を confirmed / rejected に変える操作は、RPC resolve_relation(relation_id, decision) を通してのみ行う。DB は呼び出し元が人間かエージェントかを区別できないため、『エージェントは承認できない』はサーバMCP・WebMCP にこのツールを載せないことで担保する（FEAT-007 / FEAT-008）"
+    statement: "note_relation の state を confirmed / rejected に変える操作は、RPC
+      resolve_relation(relation_id, decision) を通してのみ行う。DB
+      は呼び出し元が人間かエージェントかを区別できないため、『エージェントは承認できない』はサーバMCP・WebMCP
+      にこのツールを載せないことで担保する（FEAT-007 / FEAT-008）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-008
-    statement: "visibility の変更はオーナーのみが行える。edit 共有されたユーザーは body・title を編集できるが visibility と note_share は変更できない"
+    statement: "visibility の変更はオーナーのみが行える。edit 共有されたユーザーは body・title を編集できるが
+      visibility と note_share は変更できない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-038
-    statement: "draft のノートは visibility に従って閲覧できる（直接リンク・get_note）が、オーナー以外の検索結果には出さない。§4.2 は検索についてだけ定めており、閲覧権限（§5、変更禁止）は変えない"
+    statement: "draft のノートは visibility
+      に従って閲覧できる（直接リンク・get_note）が、オーナー以外の検索結果には出さない。§4.2
+      は検索についてだけ定めており、閲覧権限（§5、変更禁止）は変えない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-041
-    statement: "note_chunk / note_version の INSERT・UPDATE（note_chunk は DELETE も）は can_edit_note(note_id) を満たすユーザーだけに許す。note_share と member の書き込みは、note_share はノートのオーナー、member は workspace の owner だけに許す"
+    statement: "note_chunk / note_version の INSERT・UPDATE（note_chunk は DELETE も）は
+      can_edit_note(note_id) を満たすユーザーだけに許す。note_share と member の書き込みは、note_share
+      はノートのオーナー、member は workspace の owner だけに許す"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-066
-    statement: "member の行は本人の行しか SELECT できない（自己参照ポリシーの再帰を避けるため）。同僚の一覧は workspace_directory ビュー（FEAT-003 AS-060）で引く。ノートを所有するメンバーは FK により member から削除できない（v1 はメンバー管理画面を持たない: AS-003）"
+    statement: "member の行は本人の行しか SELECT できない（自己参照ポリシーの再帰を避けるため）。同僚の一覧は
+      workspace_directory ビュー（FEAT-003 AS-060）で引く。ノートを所有するメンバーは FK により member
+      から削除できない（v1 はメンバー管理画面を持たない: AS-003）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -126,9 +143,11 @@ acceptance:
     verify: test
     status: pass
     attempts: 0
-    verified_at: 2026-09-25
-    note: アプリテーブルtruncate後にseed実行、3シナリオ名・シナリオ別件数・総件数がfixturesと一致(20件)
-    evidence: tests/db/schema-rls.test.ts:196
+    verified_at: 2026-09-26
+    note: "truncate後にseed(StubEmbedder)実行、3シナリオ名・シナリオ別件数・総件数がfixturesと一致。embedderの差\
+      し替えは件数判定に影響しない。npx vitest run --project db tests/db/schema-rls.test.ts:
+      14/14 passed（正しいANON_KEYを環境変数で注入）"
+    evidence: tests/db/schema-rls.test.ts:197
 
   - id: AC-017
     kind: functional
@@ -172,7 +191,8 @@ acceptance:
   - id: AC-087
     kind: functional
     given: "美咲のノートを翔に edit で共有している"
-    when: "翔のJWTで visibility・owner_id・workspace_id の UPDATE と note_share の INSERT をそれぞれ行う"
+    when: "翔のJWTで visibility・owner_id・workspace_id の UPDATE と note_share の INSERT
+      をそれぞれ行う"
     then: "4操作ともエラーを返して拒否し、各値は変わらない"
     priority: must
     verify: test
@@ -198,7 +218,8 @@ acceptance:
   - id: AC-089
     kind: functional
     given: "美咲の private ノート P（chunk・version が各1件以上）"
-    when: "健太のJWTで note_chunk / note_version / note_share を note_id=P 指定と条件なし count=exact でそれぞれ SELECT する"
+    when: "健太のJWTで note_chunk / note_version / note_share を note_id=P 指定と条件なし
+      count=exact でそれぞれ SELECT する"
     then: "3テーブルとも P に関する行を含まない結果（行数・件数とも0）を返す"
     priority: must
     verify: test
@@ -225,13 +246,15 @@ acceptance:
     kind: functional
     given: "マイグレーション適用後のDB"
     when: "pg_proc から SECURITY DEFINER の関数を列挙する"
-    then: "許可リスト（can_view_note / can_edit_note / resolve_relation / 状態遷移トリガー関数 / note_lineage）に一致し、全関数に search_path の設定を含む"
+    then: "許可リスト（can_view_note / can_edit_note / resolve_relation / 状態遷移トリガー関数 /
+      note_lineage）に一致し、全関数に search_path の設定を含む"
     priority: must
     verify: test
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: public のprosecdef関数が許可リスト4件と一致、全件search_path設定を検証。psqlで他スキーマもSupabase基盤関数のみと確認
+    note: public
+      のprosecdef関数が許可リスト4件と一致、全件search_path設定を検証。psqlで他スキーマもSupabase基盤関数のみと確認
     evidence: tests/db/schema-rls.test.ts:183
 
   - id: AC-092

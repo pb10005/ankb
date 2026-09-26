@@ -146,7 +146,7 @@ describe("差分テスト", () => {
     const dbUrl = loadTestEnv().databaseUrl;
     try {
       for (const user of ["misaki", "kenta", "sho", "outsider"] as UserName[]) {
-        await seed(dbUrl);
+        await seed(dbUrl, stubDeps.embedder);
         const queries = ["合言葉", "宿泊費の上限", "決済サービス"];
         const before = await Promise.all(queries.map((q) => searchAs(user, q)));
         const { invisible } = expectedVisibility(user);
@@ -161,7 +161,7 @@ describe("差分テスト", () => {
         expect(after.map(pick), user).toEqual(before.map(pick));
       }
     } finally {
-      await seed(dbUrl);
+      await seed(dbUrl, stubDeps.embedder);
     }
   });
 });

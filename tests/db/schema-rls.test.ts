@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { admin, asAnon, asUser, closeAdmin, createNote, OTHER_WS, SAMPLE_WS, share, uid, noteRow } from "../helpers/db";
 import { loadScenarios, noteId } from "../../src/seed/fixtures";
 import { seed } from "../../src/seed/seed";
+import { StubEmbedder } from "../../src/core/embedding";
 import { loadTestEnv } from "../helpers/env";
 
 afterAll(closeAdmin);
@@ -196,7 +197,7 @@ describe("DB の構成", () => {
   it("AC-016: 空のDBでシードを実行すると3シナリオのノートを作成し fixtures/ の定義件数と一致する", async () => {
     await admin().query("truncate public.note_relation, public.note_chunk, public.note_version, public.note_share, public.notes cascade");
     expect((await admin().query("select count(*)::int n from public.notes")).rows[0].n).toBe(0);
-    const counts = await seed(loadTestEnv().databaseUrl);
+    const counts = await seed(loadTestEnv().databaseUrl, new StubEmbedder());
     const scenarios = loadScenarios();
     expect(scenarios.map((s) => s.scenario)).toEqual([
       "出張規程シナリオ（UC1）",
