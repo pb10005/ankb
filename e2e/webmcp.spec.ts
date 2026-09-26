@@ -271,6 +271,8 @@ test("AC-127: 各ユーザーで id を取る5ツールは不可視ノートに�
     expect(others[5]).toMatchObject({ code: "NOT_FOUND" });
     // 件数に不可視ノートを数えない: 結果に現れるノート id はすべて、そのユーザーが RLS で見えるものだけ
     const visible = await visibleNoteIds(user);
+    // 正解どうしの突き合わせ: RLS で見える集合と、フィクスチャから算出した不可視の集合は交わらない
+    for (const n of invisible) expect(visible.has(noteId(n.slug)), `${user}: ${n.slug} が RLS で見えている`).toBe(false);
     const referenced = noteIdsIn(others);
     expect(referenced.length, `${user}: 検索・回答・提案一覧がノートを返している`).toBeGreaterThan(0);
     for (const id of referenced) expect(visible.has(id), `${user}: ${id} は見えないノート`).toBe(true);

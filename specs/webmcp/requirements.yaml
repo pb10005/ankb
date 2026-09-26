@@ -255,16 +255,17 @@ acceptance:
       を返して画面は遷移せず、12ツールのどの結果にも不可視ノートの id・title・本文断片・件数を含まない"
     priority: must
     verify: test
-    status: fail
+    status: pass
     attempts: 1
     verified_at: 2026-09-26
-    note: "then の『件数を含まない』が未検証。244-249 は不可視ノートの
-      id・title・本文断片(合言葉/金額)の非含有しか見ておらず、search_knowledge/ask/list_pending_relati\
-      ons の件数(例: hits や pending の数が可視分だけか、不可視ノート間に作った提案 rel が
-      list_pending_relations に数えられないか)を一切アサートしていない。他の要素は検証済み: 5ツールの
-      NOT_FOUND(241)、存在しない id とのコード一致(242、message は比較していない)、遷移なし(231)。22 passed
-      でもテストが弱いので fail"
-    evidence: e2e/webmcp.spec.ts:244
+    note: "then の全条件をアサート済み:
+      5ツールNOT_FOUND(268)、存在しないidと結果オブジェクト丸ごと一致=message含む(270)、遷移なし(258)、件数=結果中の\
+      全ノートid(note_id/from/to/note_ids)がRLS可視集合に含まれ(274-276)かつ不可視ノート間のAI提案relがli\
+      st_pending_relationsに出ない(278)、12ツール結果に不可視ノートのid/title/本文断片なし(280-283、不可視集\
+      合はfixture+workspace所属から独立算出、全不可視ノートに断片あり)。出力に数値の件数フィールドは無い(src/mcp/server\
+      .ts)。npx playwright test e2e/webmcp.spec.ts -g AC-127: 1 passed
+      (2026-09-26)"
+    evidence: e2e/webmcp.spec.ts:268
 
   - id: AC-128
     kind: functional
