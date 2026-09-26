@@ -210,12 +210,16 @@ acceptance:
     then: "[1] の根拠チャンクの箇所をハイライト表示する"
     priority: must
     verify: test
-    status: fail
+    status: pass
     attempts: 1
     verified_at: 2026-09-26
-    note: テストは data-highlighted=true と pre
-      に『宿泊費』を含むことしか見ておらず、表示中の根拠が[1]のものか検証していない。プローブで[2][3]を指定しても同じアサーションが全部通る（全引用が宿泊費を含む）。見出しの[1]/[1]のnote・chunk一致をアサートすること。実装(src/app/ask/ask-view.tsx:40)自体はmarkerで選択しており挙動は正しい
-    evidence: e2e/webmcp.spec.ts:115
+    note: npx playwright test e2e/webmcp.spec.ts -g AC-083 で1
+      passed。highlight_citation([1]) の戻り値、根拠パネルの data-highlighted=true、見出しが [1]
+      で始まることを検証(:114-118)。[2] に切り替えると見出しが [2] になり pre
+      の本文が変わることも検証(:122-124)ので、[1]固定表示や全引用に共通する語だけの一致では通らない。見出しと pre は同じ
+      citation
+      オブジェクトから描画される(src/app/ask/ask-view.tsx:79-82)ので、見出し[1]なら本文も[1]のチャンク
+    evidence: e2e/webmcp.spec.ts:118
 
   - id: AC-084
     kind: functional
