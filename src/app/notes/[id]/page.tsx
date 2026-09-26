@@ -1,4 +1,4 @@
-// @covers AC-018, AC-020, AC-024, AC-025, AC-026, AC-131, AC-138
+// @covers AC-018, AC-020, AC-024, AC-025, AC-026, AC-131, AC-138, AC-049, AC-052, AC-112
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -6,6 +6,8 @@ import remarkGfm from "remark-gfm";
 import { canEdit, CONFLICT_MESSAGE, getNote, listColleagues, listShares } from "@/core/notes";
 import { PERMISSION_LABEL, STATUS_LABEL, VISIBILITY_LABEL, type Visibility } from "@/core/labels";
 import { requireUser } from "@/lib/session";
+import { proposalsForNote } from "@/core/relations";
+import { ProposalBanner } from "../../relations/proposal-banner";
 import { archiveNoteAction, publishNoteAction, setShareAction, setVisibilityAction } from "../actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -32,6 +34,7 @@ export default async function NotePage({
   const editable = await canEdit(supabase, id);
   const isOwner = note.owner_id === user.id;
   const shares = isOwner ? await listShares(supabase, id) : [];
+  const proposals = await proposalsForNote(supabase, id);
   const colleagues = isOwner ? (await listColleagues(supabase, note.workspace_id)).filter((c) => c.user_id !== user.id) : [];
 
   return (
@@ -45,6 +48,10 @@ export default async function NotePage({
           {ERROR_MESSAGES[error]}
         </p>
       )}
+      <ProposalBanner
+        noteId={id}
+        proposals={proposals.map((p) => ({ id: p.id, message: p.message, rationale: p.rationale, otherId: p.other.id, canResolve: p.canResolve }))}
+      />
       <p className="badges">
         {note.status !== "active" && <span className="badge">{STATUS_LABEL[note.status]}</span>}
         <span className="badge">{VISIBILITY_LABEL[note.visibility]}</span>

@@ -26,6 +26,6 @@ export class FailingSynthesizer implements Synthesizer {
 export function testSynthesizer(mode: string | undefined): Synthesizer | undefined {
   // 二重の防御: ANKB_TEST_MODE=1 に加え、開発サーバか CI のときだけ有効にする（本番に誤って設定されても無効）
   if (process.env.ANKB_TEST_MODE !== "1") return undefined;
-  if (process.env.NODE_ENV === "production" && process.env.CI !== "true") return undefined;
+  if (process.env.NODE_ENV === "production" && !process.env.CI) return undefined;
   return mode === "fail" ? new FailingSynthesizer() : new EchoSynthesizer();
 }

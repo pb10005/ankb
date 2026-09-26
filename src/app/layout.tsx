@@ -1,6 +1,7 @@
-// @covers AC-001, AC-002
+// @covers AC-001, AC-002, AC-053
 import type { Metadata } from "next";
 import "./globals.css";
+import { PendingBadge } from "./relations/pending-badge";
 
 export const metadata: Metadata = {
   title: "ankb",
@@ -10,7 +11,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        <header className="site">
+          <a href="/dashboard" className="brand">
+            ankb
+          </a>
+          <PendingBadge />
+        </header>
+        {children}
+      </body>
     </html>
   );
 }

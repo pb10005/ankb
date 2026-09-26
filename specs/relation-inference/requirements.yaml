@@ -46,6 +46,26 @@ assumptions:
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
+  - id: AS-074
+    statement: "推定ジョブの試行は初回＋再試行3回の最大4回とする。LLM の失敗でメッセージを処理できなかった場合は即座に再試行し、4回目も失敗したら jobs.relation_job_failure に記録してキューから外す（アーカイブ）。ノートの保存はジョブの成否に関係なく成功する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-10"
+  - id: AS-075
+    statement: "『後で』は提案を proposed のまま残し、そのブラウザのセッション中だけノート画面のバナーを隠す（sessionStorage）。インボックスとヘッダーの件数には引き続き表示する"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-10"
+  - id: AS-076
+    statement: "ノートの公開・保存の直後に、応答を返した後（Next.js の after）で推定キューを処理する。pg_cron による毎分の回収は、デプロイ時に jobs.configure_worker(ワーカーURL, 共有秘密) を実行して有効にする（共有秘密は環境変数 ANKB_WORKER_SECRET）。ジョブは RLS を通らない DB 直結の接続（DATABASE_URL、src/jobs/ 配下のみ）で動く"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-10"
+  - id: AS-077
+    statement: "E2E テストでは ANKB_TEST_MODE=1（かつ開発サーバか CI）のとき、タイトルの規則で判定する決定的な判定器を使う。タイトル末尾の識別子が同じ組について、『新・』と相手の『旧・』→ supersedes 0.9、両方に『矛盾』→ contradicts 0.8、それ以外は none"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-10"
 
 open_questions: []
 

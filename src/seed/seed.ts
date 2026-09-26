@@ -84,6 +84,8 @@ export async function seed(databaseUrl = process.env.DATABASE_URL ?? LOCAL_DATAB
         counts.relations++;
       }
     }
+    // fixtures の関係は定義済みなので、投入で積まれた推定ジョブは捨てる
+    await client.query("select pgmq.purge_queue('relation_inference')");
     await client.query("commit");
     return counts;
   } catch (e) {

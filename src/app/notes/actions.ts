@@ -1,9 +1,10 @@
 "use server";
-// @covers AC-018, AC-019, AC-020, AC-022, AC-023, AC-024, AC-025, AC-132, AC-138
+// @covers AC-018, AC-019, AC-020, AC-022, AC-023, AC-024, AC-025, AC-132, AC-138, AC-049
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createNote, getNote, setShare, updateNote } from "@/core/notes";
 import { createClient } from "@/lib/supabase/server";
+import { kickRelationInference } from "@/jobs/kick";
 
 export type FormState = { error: string | null };
 
@@ -27,6 +28,7 @@ export async function saveNoteAction(_prev: FormState, form: FormData): Promise<
     expected_version: Number(form.get("version")),
   });
   if (!res.ok) return { error: res.message };
+  kickRelationInference();
   revalidatePath(`/notes/${id}`);
   redirect(`/notes/${id}`);
 }
@@ -35,6 +37,7 @@ async function changeField(form: FormData, patch: Record<string, unknown>): Prom
   const id = String(form.get("id"));
   const supabase = await createClient();
   const res = await updateNote(supabase, id, { ...patch, expected_version: Number(form.get("version")) });
+  if (res.ok) kickRelationInference();
   revalidatePath(`/notes/${id}`);
   // 失敗したらノート画面にエラーを表示する（AC-138）
   redirect(res.ok ? `/notes/${id}` : `/notes/${id}?error=${res.code.toLowerCase()}`);

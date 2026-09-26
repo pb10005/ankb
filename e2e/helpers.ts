@@ -1,4 +1,4 @@
-// @covers AC-018, AC-019, AC-020, AC-021, AC-130, AC-131, AC-132
+// @covers AC-018, AC-019, AC-020, AC-021, AC-130, AC-131, AC-132, AC-049, AC-050
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import pg from "pg";
 import { fillLogin } from "./fixtures";
@@ -60,4 +60,29 @@ export async function seedShare(noteId: string, user: UserName, permission: "vie
 export async function noteInDb(id: string) {
   const { rows } = await db().query("select * from public.notes where id = $1", [id]);
   return rows[0];
+}
+
+/** 検索・推定用のチャンクを作る（スタブ embedding） */
+export async function indexSeeded(id: string) {
+  const { buildChunkRows } = await import("../src/core/indexing");
+  const { StubEmbedder } = await import("../src/core/embedding");
+  const { rows } = await db().query("select title, body from public.notes where id = $1", [id]);
+  await db().query("delete from public.note_chunk where note_id = $1", [id]);
+  for (const c of await buildChunkRows(id, rows[0].title, rows[0].body, new StubEmbedder())) {
+    await db().query("insert into public.note_chunk (note_id, chunk_index, content, embedding) values ($1, $2, $3, $4)", [
+      c.note_id,
+      c.chunk_index,
+      c.content,
+      c.embedding,
+    ]);
+  }
+}
+
+/** AI の提案を直接作る（バナーを表示している状態の前提づくり） */
+export async function seedProposal(from: string, to: string, type: "supersedes" | "contradicts" | "related" = "supersedes", rationale = "改定されたため") {
+  const { rows } = await db().query(
+    "insert into public.note_relation (from_note_id, to_note_id, type, proposed_by, confidence, rationale) values ($1, $2, $3, 'ai', 0.9, $4) returning id",
+    [from, to, type, rationale],
+  );
+  return rows[0].id as string;
 }
