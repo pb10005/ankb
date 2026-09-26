@@ -1,4 +1,4 @@
-// @covers AC-001, AC-002, AC-053, AC-072, AC-073, AC-074
+// @covers AC-001, AC-002, AC-053, AC-072, AC-073, AC-074, AC-128
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";

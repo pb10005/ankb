@@ -1,5 +1,6 @@
 // @covers AC-069, AC-077, AC-127
 // @assumption AS-028
+// @assumption AS-072
 // WebMCP の読み取り系ツールと propose_relation の実行口。ブラウザのログインセッションで、サーバMCP と同じツール実装（toolHandlers）を呼ぶ
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";

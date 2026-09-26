@@ -1,4 +1,4 @@
-// @covers AC-002, AC-004, AC-019, AC-046
+// @covers AC-002, AC-004, AC-019, AC-046, AC-128
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";

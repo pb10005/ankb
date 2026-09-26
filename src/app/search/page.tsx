@@ -1,4 +1,4 @@
-// @covers AC-076
+// @covers AC-076, AC-128
 // 人間向けの検索画面。検索クエリを画面の文脈として登録する（エージェントの get_current_context）
 import Link from "next/link";
 import { searchKnowledge } from "@/core/search";
