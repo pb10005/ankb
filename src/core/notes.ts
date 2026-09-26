@@ -51,7 +51,15 @@ function validateContent(input: { title?: string; body?: string }): Result<null>
   return ok(null);
 }
 
+// セッションを持たないクライアント（サーバMCP: 検証済みトークンをヘッダで渡す）の利用者 id
+const clientUsers = new WeakMap<SupabaseClient, string>();
+export function bindClientUser(client: SupabaseClient, userId: string): void {
+  clientUsers.set(client, userId);
+}
+
 async function currentUserId(client: SupabaseClient): Promise<string | null> {
+  const bound = clientUsers.get(client);
+  if (bound) return bound;
   const { data } = await client.auth.getUser();
   return data.user?.id ?? null;
 }

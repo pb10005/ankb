@@ -24,6 +24,22 @@
 | 8 WebMCP | [`specs/webmcp`](specs/webmcp/requirements.yaml) | FEAT-008 | frozen |
 | 8 WebMCP（承認フロー） | [`specs/webmcp-approval`](specs/webmcp-approval/requirements.yaml) | FEAT-011 | frozen |
 
+## Claude Code から接続する（サーバMCP）
+
+ankb はサーバMCP（Streamable HTTP）を `/mcp` で公開する。認可は Supabase Auth の OAuth 2.1 サーバ（動的クライアント登録）で、
+外部エージェントはログインしたユーザー本人の権限で動く。承認・公開範囲の変更・削除はツールに無い（人間が Web UI で行う）。
+
+```bash
+# ankb の URL（ローカル開発なら http://127.0.0.1:3000）
+claude mcp add --transport http ankb http://127.0.0.1:3000/mcp
+# Claude Code で /mcp を開き ankb を選ぶとブラウザで ankb のログインと「接続の許可」画面が開く。許可すると接続が完了する
+```
+
+使えるツール: `search_knowledge` / `ask` / `get_note` / `get_note_lineage` / `list_pending_relations` / `create_note` / `update_note` / `propose_relation`
+
+本番では Supabase の Auth 設定で OAuth サーバと動的クライアント登録を有効にし、同意画面の URL を `<ankb の URL>/oauth/consent` にする
+（ローカルは `supabase/config.toml` の `[auth.oauth_server]` で設定済み）。
+
 ## 開発プロセス
 
 [conformance-kit](https://github.com/pb10005/conformance-kit) の適合性ループで開発する（規約は `CLAUDE.md`）。

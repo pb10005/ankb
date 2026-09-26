@@ -5,6 +5,7 @@ import { ask, type Answer } from "@/core/answer";
 import { UpstreamError } from "@/core/synthesizer";
 import { testSynthesizer } from "@/core/test-synthesizers";
 import { createClient } from "@/lib/supabase/server";
+import { consumeAskQuota } from "@/core/usage";
 
 export type AskState = { question: string; answer: Answer | null; error: string | null };
 
@@ -18,6 +19,7 @@ export async function askAction(_prev: AskState, form: FormData): Promise<AskSta
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { question, answer: null, error: "ログインが必要です" };
+  if (!(await consumeAskQuota(supabase))) return { question, answer: null, error: "質問の回数の上限に達しました。時間をおいてから質問してください" };
   try {
     const synthesizer = testSynthesizer((await cookies()).get("ankb-test-synth")?.value);
     const answer = await ask(supabase, question, synthesizer ? { synthesizer } : {});

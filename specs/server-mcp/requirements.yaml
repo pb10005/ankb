@@ -52,6 +52,11 @@ assumptions:
     status: confirmed
     owner: pb10005
     resolve_by: "2026-09-25"
+  - id: AS-078
+    statement: "get_note_lineage は SECURITY DEFINER の関数 public.note_lineage で置き換えの連鎖を両方向にたどり、呼び出し者が閲覧できるノートだけを返す（閲覧できない中間ノートは id・タイトルを出さずに飛ばす）。RLS の下では閲覧できない中間ノートとの関係が見えず、連鎖の先をたどれないため。これにより FEAT-002 AC-091 の SECURITY DEFINER 許可リストに note_lineage を加える必要がある（人間の承認待ち）"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-10"
 
 open_questions: []
 

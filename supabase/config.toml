@@ -364,12 +364,11 @@ enabled = false
 
 # OAuth server configuration
 [auth.oauth_server]
-# Enable OAuth server functionality
-enabled = false
-# Path for OAuth consent flow UI
+# ankb: サーバMCP の認可サーバとして使う（AS-024 / AS-059）。Claude Code などは動的クライアント登録で接続する
+enabled = true
+# 同意画面（site_url 上の Next.js ページ）
 authorization_url_path = "/oauth/consent"
-# Allow dynamic client registration
-allow_dynamic_registration = false
+allow_dynamic_registration = true
 
 [edge_runtime]
 enabled = true
