@@ -8,7 +8,9 @@ id: FEAT-003
 title: "ノートのCRUDとエディタ: 作成・編集・公開範囲・共有・版履歴"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "美咲と健太が自分用のメモとチームに共有するノートを1つの場所で書き分けられるように、ノートの作成・編集・公開範囲の切り替え・ユーザー単位の共有・版履歴の閲覧をWeb UIで提供する。3種類の visibility がUIから設定でき、設定どおりに他のユーザーからの見え方が変わることを完了とする。"
+intent: "美咲と健太が自分用のメモとチームに共有するノートを1つの場所で書き分けられるように、ノートの作成・編集・公開範囲の切り替え・ユーザー単位の共\
+  有・版履歴の閲覧をWeb UIで提供する。3種類の visibility
+  がUIから設定でき、設定どおりに他のユーザーからの見え方が変わることを完了とする。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -23,7 +25,9 @@ out_of_scope:
 
 assumptions:
   - id: AS-009
-    statement: "UI上の visibility の表記は private=『非公開』、shared=『指定した人』、workspace=『チーム全体』とする。共有の権限の表記は view=『閲覧のみ』、edit=『編集できる』とする。専門用語をUIに出さない（ペルソナA）"
+    statement: "UI上の visibility の表記は
+      private=『非公開』、shared=『指定した人』、workspace=『チーム全体』とする。共有の権限の表記は
+      view=『閲覧のみ』、edit=『編集できる』とする。専門用語をUIに出さない（ペルソナA）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -33,7 +37,8 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-051
-    statement: "閲覧できないノートは、すべての入口（Web UI・サーバMCP・WebMCP）で存在しない id と同じ応答（Web は 404 画面、MCP は NOT_FOUND）を返す"
+    statement: "閲覧できないノートは、すべての入口（Web UI・サーバMCP・WebMCP）で存在しない id と同じ応答（Web は 404
+      画面、MCP は NOT_FOUND）を返す"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -43,22 +48,29 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-060
-    statement: "共有先の候補は、呼び出し者が所属する workspace のメンバーだけを返すビュー workspace_directory（表示名とメールアドレス）から選ぶ。member テーブル自体は自分の行しか見えない"
+    statement: "共有先の候補は、呼び出し者が所属する workspace のメンバーだけを返すビュー
+      workspace_directory（表示名とメールアドレス）から選ぶ。member テーブル自体は自分の行しか見えない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-061
-    statement: "ノート作成時の workspace は、所属が1つならそれを使い、複数なら作成画面で選ばせる。ノートの状態の表記は draft=『下書き』、active=『有効』、superseded=『置き換え済み』、archived=『アーカイブ済み』とする"
+    statement: "ノート作成時の workspace は、所属が1つならそれを使い、複数なら作成画面で選ばせる。ノートの状態の表記は
+      draft=『下書き』、active=『有効』、superseded=『置き換え済み』、archived=『アーカイブ済み』とする"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-062
-    statement: "ノート更新API は PATCH /api/notes/{id}（ログインセッションの cookie で認証）とし、200 / 400 VALIDATION_ERROR / 401 UNAUTHENTICATED（未ログイン）/ 403 FORBIDDEN / 404 NOT_FOUND / 409 CONFLICT を返す。title・body・effective_from・status・visibility と expected_version 以外のフィールドを送ると 403 を返す。Web UI の保存とこのAPIは同じ updateNote 関数を通す"
+    statement: "ノート更新API は PATCH /api/notes/{id}（ログインセッションの cookie で認証）とし、200 / 400
+      VALIDATION_ERROR / 401 UNAUTHENTICATED（未ログイン）/ 403 FORBIDDEN / 404
+      NOT_FOUND / 409 CONFLICT を返す。title・body・effective_from・status・visibility と
+      expected_version 以外のフィールドを送ると 403 を返す。Web UI の保存とこのAPIは同じ updateNote
+      関数を通す"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-067
-    statement: "非公開（private）のノートで共有先を追加したら、公開範囲を『指定した人』（shared）に切り替える。非公開のままでは共有先が読めない（§5.1）ため"
+    statement: "非公開（private）のノートで共有先を追加したら、公開範囲を『指定した人』（shared）に切り替える。非公開のままでは共有先が読\
+      めない（§5.1）ため"
     status: confirmed
     owner: pb10005
     resolve_by: "2026-09-26"
@@ -193,7 +205,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: sho(edit共有)のRLS経由更新で note_version が0->1件、version=1/body=更新前の本文 を検証。vitest 1 passed
+    note: sho(edit共有)のRLS経由更新で note_version が0->1件、version=1/body=更新前の本文 を検証。vitest
+      1 passed
     evidence: tests/db/note-crud.test.ts:8
 
   - id: AC-130
@@ -206,7 +219,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: edit共有の健太が visibility=workspace / owner_id=健太 を個別送信し両方403、DBのvisibility/owner_id不変を検証。passed
+    note: edit共有の健太が visibility=workspace / owner_id=健太
+      を個別送信し両方403、DBのvisibility/owner_id不変を検証。passed
     evidence: e2e/notes.spec.ts:67
 
   - id: AC-131
@@ -241,8 +255,12 @@ acceptance:
     then: 『ほかの人が先に更新しました。再読み込みしてください』を表示し、status と visibility は変わらない
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: 画面表示後にDB直接更新で版を上げ、アーカイブ/公開する/公開範囲を変更の3操作それぞれで競合メッセージのalert表示とDB上のstatus・visibility不変を検証。playwright
+      1 passed
+    evidence: e2e/notes.spec.ts:193
   - kind: functional
     id: AC-139
     given: 未ログインのブラウザ
@@ -250,5 +268,9 @@ acceptance:
     then: /login へ遷移し、next に元のパスを含む URL を表示する
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: /notes→/login?next=%2Fnotes、/notes/{id}→/login?next=%2Fnotes%2F{id}
+      とログインフォーム表示を検証。playwright 1 passed
+    evidence: e2e/notes.spec.ts:218

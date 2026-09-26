@@ -8,7 +8,8 @@ id: FEAT-001
 title: "雛形: Next.js + Supabase の認証とCI"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "ankb の全機能（Web UI・サーバMCP・WebMCP）が乗る土台として、Next.js（App Router）と Supabase Auth によるログインと、lint・型チェック・テストを回すCIを用意する。ログインしたユーザーだけがダッシュボードに到達できる状態を完了とする。"
+intent: "ankb の全機能（Web UI・サーバMCP・WebMCP）が乗る土台として、Next.js（App Router）と Supabase
+  Auth によるログインと、lint・型チェック・テストを回すCIを用意する。ログインしたユーザーだけがダッシュボードに到達できる状態を完了とする。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -23,12 +24,14 @@ out_of_scope:
 
 assumptions:
   - id: AS-001
-    statement: "ログイン方式は Supabase Auth のメールアドレス＋パスワードとする。マジックリンクは使わない（ローカル・CIでメール受信を介さずにテストできるため）"
+    statement: "ログイン方式は Supabase Auth
+      のメールアドレス＋パスワードとする。マジックリンクは使わない（ローカル・CIでメール受信を介さずにテストできるため）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-002
-    statement: "ローカル開発とCIは Supabase CLI（supabase start、Docker）で Postgres・Auth を起動する。テストフレームワークは単体・結合が Vitest、E2E が Playwright とする"
+    statement: "ローカル開発とCIは Supabase CLI（supabase start、Docker）で Postgres・Auth
+      を起動する。テストフレームワークは単体・結合が Vitest、E2E が Playwright とする"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -38,12 +41,14 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-055
-    statement: "ログイン後の遷移先 next パラメータは / で始まる同一オリジンの相対パスだけを受け付け、// または /\\ で始まるもの、制御文字を含むものは /dashboard に置き換える"
+    statement: "ログイン後の遷移先 next パラメータは / で始まる同一オリジンの相対パスだけを受け付け、// または /\\
+      で始まるもの、制御文字を含むものは /dashboard に置き換える"
     status: confirmed
     owner: pb10005
     resolve_by: "2026-09-26"
   - id: AS-057
-    statement: "当初の依頼にあった『のちのアクションに活用できる形で保管する』（ノートの次アクション・期限・見直し日の構造化）は v1 では扱わない。指示書 docs/instructions.md に従う（OQ-001 を 2026-09-25 に既定案で確定）"
+    statement: "当初の依頼にあった『のちのアクションに活用できる形で保管する』（ノートの次アクション・期限・見直し日の構造化）は v1
+      では扱わない。指示書 docs/instructions.md に従う（OQ-001 を 2026-09-25 に既定案で確定）"
     status: confirmed
     owner: pb10005
     resolve_by: "2026-09-25"
@@ -61,7 +66,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: "E2E pass: /login?next=%2Fdashboard へのリダイレクトとログインフォーム(form name=ログイン, メール/パスワード欄)の表示を検証。実装 src/proxy.ts:31"
+    note: "E2E pass: /login?next=%2Fdashboard へのリダイレクトとログインフォーム(form name=ログイン,
+      メール/パスワード欄)の表示を検証。実装 src/proxy.ts:31"
     evidence: e2e/auth.spec.ts:5
 
   - id: AC-002
@@ -74,7 +80,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: "E2E pass: 実ローカルSupabaseに対しシードユーザー misaki@example.com でログイン、URL /dashboard と current-user-email の表示テキストを検証"
+    note: "E2E pass: 実ローカルSupabaseに対しシードユーザー misaki@example.com でログイン、URL /dashboard
+      と current-user-email の表示テキストを検証"
     evidence: e2e/auth.spec.ts:13
 
   - id: AC-003
@@ -87,7 +94,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: "E2E pass: エラー文言の完全一致、URLが/loginのまま、/dashboard再訪で/loginへ戻る、sb-*auth-token cookieが0件、を検証"
+    note: "E2E pass: エラー文言の完全一致、URLが/loginのまま、/dashboard再訪で/loginへ戻る、sb-*auth-token
+      cookieが0件、を検証"
     evidence: e2e/auth.spec.ts:20
 
   - id: AC-004
@@ -100,7 +108,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: "E2E pass: ログイン後にログアウトを押し、/dashboard 再訪で /login?next=%2Fdashboard へ遷移しログインフォーム表示を検証"
+    note: "E2E pass: ログイン後にログアウトを押し、/dashboard 再訪で /login?next=%2Fdashboard
+      へ遷移しログインフォーム表示を検証"
     evidence: e2e/auth.spec.ts:32
 
   - id: AC-005
@@ -114,7 +123,9 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: "Inspection: on.pull_request トリガー(ブランチ制限なしでmain含む)、単一ジョブで lint(25)/typecheck(28)/unit(31)/e2e(47) を直列実行し、どのステップの非0終了もジョブ失敗となる。lint/typecheck はローカルで実行可能を確認。Actions 実走は未確認"
+    note: "Inspection: on.pull_request トリガー(ブランチ制限なしでmain含む)、単一ジョブで
+      lint(25)/typecheck(28)/unit(31)/e2e(47)
+      を直列実行し、どのステップの非0終了もジョブ失敗となる。lint/typecheck はローカルで実行可能を確認。Actions 実走は未確認"
 
   - id: AC-133
     kind: functional
@@ -126,7 +137,9 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-25
-    note: "E2E pass: /login?next=https://evil.example/ でログイン後、URLが http://127.0.0.1:PORT/dashboard に一致。単体 tests/safe-next.test.ts:5 で //, /\\, 制御文字, javascript: も /dashboard に置換されることを確認"
+    note: "E2E pass: /login?next=https://evil.example/ でログイン後、URLが
+      http://127.0.0.1:PORT/dashboard に一致。単体 tests/safe-next.test.ts:5 で //,
+      /\\, 制御文字, javascript: も /dashboard に置換されることを確認"
     evidence: e2e/auth.spec.ts:43
   - kind: functional
     id: AC-135
@@ -135,8 +148,12 @@ acceptance:
     then: ログイン後に /notes へ遷移し、ノート一覧を表示する
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: 未ログインで/notes→/login?next=%2Fnotes
+      を確認、ログイン後に/notesへ遷移しh1『ノート』(一覧ページ)表示を確認。playwright 1 passed
+    evidence: e2e/auth.spec.ts:49
   - kind: functional
     id: AC-136
     given: ログイン済みのブラウザ
@@ -144,5 +161,8 @@ acceptance:
     then: /dashboard へ遷移し、ダッシュボードを表示する
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: ログイン後に/を開き/dashboardへ遷移、h1『ダッシュボード』表示を確認。playwright 1 passed
+    evidence: e2e/auth.spec.ts:57
