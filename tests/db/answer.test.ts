@@ -190,3 +190,39 @@ describe("経緯の再構成（§6.4）", () => {
     expect(JSON.stringify(s.requests[0])).toContain("timeline=false");
   });
 });
+
+describe("契約の境界", () => {
+  it("AC-106: 検索結果に食い違いがあっても、すべての主張が捨てられれば not_found=true で citations は空配列", async () => {
+    const { answer } = await askAs("misaki", Q, { claims: [{ text: "根拠なし", note_ids: [], kind: "current" }, current("捏造", randomUUID())], not_found: false });
+    expect(answer.conflicts.length).toBeGreaterThan(0); // 前提: 食い違いが検索結果にある
+    expect(answer.not_found).toBe(true);
+    expect(answer.citations).toEqual([]);
+  });
+
+  it("AC-104: 現行と旧規程を併せて引いた主張も旧情報に降格し、現行の主張として表示しない", async () => {
+    const { answer } = await askAs("misaki", Q, {
+      claims: [current("宿泊費の上限は1泊12,000円です。", NEW), current("上限は10,000円です。", NEW, OLD)],
+      not_found: false,
+    });
+    expect(answer.answer).toContain("上限は10,000円です。（旧情報）");
+    const para = answer.answer.split("\n\n").find((p) => p.includes("上限は10,000円です。"))!;
+    expect(para).not.toMatch(/\[\d+\]/);
+    expect(answer.citations.map((c) => c.note_id)).not.toContain(OLD);
+  });
+
+  it("AS-071: LLM が not_found を返しても superseded_context のノートは outdated_mentions に入る", async () => {
+    const { answer } = await askAs("misaki", Q, { claims: [], not_found: true });
+    expect(answer.outdated_mentions.map((o) => o.note_id)).toContain(OLD);
+  });
+});
+
+describe("LLM の失敗", () => {
+  it("AC-045: タイムアウトや5xx（SDK の例外）は UpstreamError に変換され、部分的な Answer を返さない", async () => {
+    const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    const { UpstreamError } = await import("../../src/core/synthesizer");
+    for (const err of [new Anthropic.APIConnectionTimeoutError(), new Anthropic.InternalServerError(500, undefined, "boom", new Headers())]) {
+      const { synthesizer } = fakeSynthesizer(err);
+      await expect(ask(await asUser("misaki"), Q, { ...stubDeps, synthesizer })).rejects.toBeInstanceOf(UpstreamError);
+    }
+  });
+});

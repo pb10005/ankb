@@ -85,9 +85,10 @@ export async function ask(client: SupabaseClient, question: string, deps: AskDep
   // LLM が「見つからない」と答えた: 検索結果の上位を近い情報として併記する（AS-047）
   if (out.not_found) {
     const near = [...active.keys()].slice(0, NEAR_INFO_MAX);
-    if (near.length === 0) return notFound(result.conflicts);
+    const mentions = supersededMentions(superseded, new Map());
+    if (near.length === 0) return { ...notFound(result.conflicts), outdated_mentions: mentions };
     const items = near.map((id) => `「${active.get(id)!.title}」${citations.marker(id)}`);
-    return { answer: `${NEAR_INFO_PREFIX} ${items.join("、")}`, citations: citations.list(), outdated_mentions: [], conflicts: result.conflicts, not_found: true, format };
+    return { answer: `${NEAR_INFO_PREFIX} ${items.join("、")}`, citations: citations.list(), outdated_mentions: mentions, conflicts: result.conflicts, not_found: true, format };
   }
 
   // 契約の検査: 根拠が無い claim と、検索結果に無い note_id を引いた claim は捨てる（AC-041 / AC-105）
@@ -106,17 +107,21 @@ export async function ask(client: SupabaseClient, question: string, deps: AskDep
   const paragraphs: string[] = [];
   let lastCurrent: Rendered | undefined;
   for (const r of ordered) {
-    // superseded のノートだけを根拠にした claim は旧情報に降格する（AC-104）
-    if (r.activeIds.length === 0) {
+    // superseded のノートを根拠に含む claim は、現行のノートも併せて引いていても旧情報に降格する（AC-104）。
+    // 旧規程の内容が現行の主張として表示されるのを防ぐ（§6.3「superseded のノートは根拠に使わない」）
+    if (r.outdatedIds.length > 0) {
       for (const id of r.outdatedIds) outdated.set(id, { note_id: id, title: superseded.get(id)!.title, note: r.claim.text });
       paragraphs.push(`${r.claim.text}（旧情報${format === "timeline" ? `・${JUDGEMENT_CHANGED_TEXT}` : ""}）`);
       continue;
     }
     const po = r.activeIds.some((id) => active.get(id)!.possibly_outdated) ? POSSIBLY_OUTDATED_TEXT : "";
-    paragraphs.push(`${r.claim.text}${po} ${r.activeIds.map((id) => citations.marker(id)).join("")}`);
-    lastCurrent = r;
+    // LLM が以前の状態として書いた claim（kind=outdated）は根拠を付けたうえで旧情報と明示する
+    const label = r.claim.kind === "outdated" ? "（旧情報）" : "";
+    paragraphs.push(`${r.claim.text}${label}${po} ${r.activeIds.map((id) => citations.marker(id)).join("")}`);
+    if (r.claim.kind !== "outdated") lastCurrent = r;
   }
-  if (!lastCurrent && result.conflicts.length === 0) {
+  // 契約を満たす主張が1件も残らなければ「見つからなかった」と返す（AC-106）。食い違いの併記だけの回答にはしない
+  if (!lastCurrent) {
     const r = notFound(result.conflicts);
     return { ...r, outdated_mentions: [...outdated.values(), ...supersededMentions(superseded, outdated)] };
   }

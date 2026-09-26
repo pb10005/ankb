@@ -23,7 +23,8 @@ class Recording implements Synthesizer {
 
 const CASES = [
   { user: "misaki" as const, question: "出張の宿泊費の上限はいくら？", superseded: [noteId("travel-old")], oldAmounts: ["10,000円"] },
-  { user: "kenta" as const, question: "決済サービスをなぜA社にしたんだっけ？", superseded: [noteId("pay-decision-b")], oldAmounts: [] as string[] },
+  // UC2 の旧決定の内容（B社採用）が現行として書かれていないか
+  { user: "kenta" as const, question: "決済サービスをなぜA社にしたんだっけ？", superseded: [noteId("pay-decision-b")], oldAmounts: ["B社を採用"] },
 ];
 
 describe("回答の契約の評価（実 Claude API）", () => {
@@ -39,7 +40,7 @@ describe("回答の契約の評価（実 Claude API）", () => {
         // kind=current で superseded ノートを引用した claim
         const bad = claims.filter((cl) => cl.kind === "current" && cl.note_ids.some((id) => c.superseded.includes(id)));
         // outdated_mentions 以外（= answer 本文の、旧情報と明示していない文）で旧規程の金額を含む文
-        const sentences = answer.answer.split(/\n\n|。/).filter((s) => !s.includes("旧情報"));
+        const sentences = answer.answer.split("\n\n").filter((s) => !s.includes("旧情報"));
         const leaked = sentences.filter((s) => c.oldAmounts.some((a) => s.includes(a)));
         violations += bad.length + leaked.length;
         log.push(`${c.question} #${i + 1}: current引用=${bad.length} 金額漏れ=${leaked.length}`);

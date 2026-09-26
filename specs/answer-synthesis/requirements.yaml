@@ -8,9 +8,7 @@ id: FEAT-005
 title: "サーバ合成 ask: 回答の契約をサーバ側で強制する"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "散らばった断片から、今有効な答えを根拠付きで組み立てる（§1.2）。サーバが検索パイプラインの結果だけを材料に Claude
-  で回答を合成し、すべての主張に根拠ノートを付け、旧情報・矛盾・更新の可能性を区別して返す。美咲が回答の正しさを自分で判断できなくても、どれが現行でどこに書\
-  いてあるかが画面で分かる状態を作る。"
+intent: "散らばった断片から、今有効な答えを根拠付きで組み立てる（§1.2）。サーバが検索パイプラインの結果だけを材料に Claude で回答を合成し、すべての主張に根拠ノートを付け、旧情報・矛盾・更新の可能性を区別して返す。美咲が回答の正しさを自分で判断できなくても、どれが現行でどこに書いてあるかが画面で分かる状態を作る。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -25,48 +23,32 @@ out_of_scope:
 
 assumptions:
   - id: AS-017
-    statement: "Claude には自由文ではなく構造化出力（tool use の JSON スキーマ）で claims:[{text,
-      note_ids[], kind: current|outdated|conflict|timeline, date?}] と not_found
-      を出させる。answer 文字列・引用マーカー・citations はサーバが claims から決定的に組み立てる。検索結果に無い note_id
-      を引用した claim と、note_ids が空の claim は捨てる"
+    statement: "Claude には自由文ではなく構造化出力（tool use の JSON スキーマ）で claims:[{text, note_ids[], kind: current|outdated|conflict|timeline, date?}] と not_found を出させる。answer 文字列・引用マーカー・citations はサーバが claims から決定的に組み立てる。検索結果に無い note_id を引用した claim と、note_ids が空の claim は捨てる"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-018
-    statement: "合成に使うモデルは claude-opus-5 を既定とし、環境変数 ANKB_ANSWER_MODEL
-      で変更できる。claude-opus-5 は temperature
-      を受け付けないため指定しない（出力の揺れは構造化出力とサーバ側の組み立てで抑える: AS-017）。拒否に備えて server-side
-      fallback（fallbacks: default）を付ける"
+    statement: "合成に使うモデルは claude-opus-5 を既定とし、環境変数 ANKB_ANSWER_MODEL で変更できる。claude-opus-5 は temperature を受け付けないため指定しない（出力の揺れは構造化出力とサーバ側の組み立てで抑える: AS-017）。拒否に備えて server-side fallback（fallbacks: default）を付ける"
     status: confirmed
     owner: pb10005
     resolve_by: "2026-09-26"
   - id: AS-046
-    statement: "LLM に渡すのは searchKnowledge の結果（hits / superseded_context /
-      conflicts）のチャンクだけとする。superseded_context のノートを kind=current で引用した claim は
-      kind=outdated に降格して outdated_mentions に回す。conflicts がある場合、片方だけを current
-      で引用していても、サーバが両方のマーカーを併記する"
+    statement: "LLM に渡すのは searchKnowledge の結果（hits / superseded_context / conflicts）のチャンクだけとする。superseded_context のノートを kind=current で引用した claim は kind=outdated に降格して outdated_mentions に回す。conflicts がある場合、片方だけを current で引用していても、サーバが両方のマーカーを併記する"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-047
-    statement: "not_found の『近い情報』は、LLM が not_found=true を返した時に検索結果の hits
-      上位最大3件とし、検索ヒットが0件の場合は併記しない"
+    statement: "not_found の『近い情報』は、LLM が not_found=true を返した時に検索結果の hits 上位最大3件とし、検索ヒットが0件の場合は併記しない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-058
-    statement: "embedding は Voyage AI の多言語モデルを使う。LLM（Anthropic API）と embedding
-      の利用料はサーバ運用者の API キー（ANTHROPIC_API_KEY / VOYAGE_API_KEY）で負担し、BYO キーは v1
-      で扱わない。ask にはユーザーあたりの回数上限を設ける（FEAT-007 AS-054）（OQ-002 を 2026-09-25
-      に既定案で確定）"
+    statement: "embedding は Voyage AI の多言語モデルを使う。LLM（Anthropic API）と embedding の利用料はサーバ運用者の API キー（ANTHROPIC_API_KEY / VOYAGE_API_KEY）で負担し、BYO キーは v1 で扱わない。ask にはユーザーあたりの回数上限を設ける（FEAT-007 AS-054）（OQ-002 を 2026-09-25 に既定案で確定）"
     status: confirmed
     owner: pb10005
     resolve_by: "2026-09-25"
   - id: AS-071
-    statement: "Answer 型（§7.3）に format（standard |
-      timeline）を加え、経緯形式で答えたかどうかを返す。旧情報だけを根拠にした claim は answer
-      に「（旧情報）」を付けて残し、引用マーカーは付けない。superseded_context のノートは claim に引かれていなくても
-      outdated_mentions に入れる"
+    statement: "Answer 型（§7.3）に format（standard | timeline）を加え、経緯形式で答えたかどうかを返す。superseded のノートを根拠に含む claim は、現行のノートを併せて引いていても旧情報に降格し、answer に「（旧情報）」を付けて残し引用マーカーは付けない（根拠は outdated_mentions の note_id・タイトルで示す）。LLM が kind=outdated とした claim は根拠のマーカーを付けたうえで「（旧情報）」を付ける。superseded_context のノートは claim に引かれていなくても、not_found の場合も outdated_mentions に入れる。契約を満たす主張が1件も残らなければ、食い違いがあっても not_found=true とする"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -84,8 +66,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: 改定通知を current 引用した際に citations に NEW を含むことを検証。vitest db 16/16 pass。合成器は
-      Anthropic クライアントのみ偽装し、ClaudeSynthesizer と ask は実物
+    note: 改定通知を current 引用した際に citations に NEW を含むことを検証。vitest db 16/16 pass。合成器は Anthropic クライアントのみ偽装し、ClaudeSynthesizer と ask は実物
     evidence: tests/db/answer.test.ts:28
 
   - id: AC-038
@@ -202,12 +183,7 @@ acceptance:
     status: fail
     attempts: 1
     verified_at: 2026-09-26
-    note: "src/core/answer.ts:119 の条件が !lastCurrent && conflicts.length===0
-      のため、検索結果に conflicts がある場合は全 claim を捨てても not_found=false になり、citations に
-      conflicts の両ノートが入る。再現: 美咲・『出張の宿泊費の上限はいくら？』・stub が note_ids=[] と捏造 id の
-      claim だけを返す → not_found=false、citations=[travel-memo, travel-new]、answer
-      は食い違いの併記文だけ。tests/db/answer.test.ts:100 は conflicts
-      が出ない質問を意図的に選んでいて、この境界を踏んでいない"
+    note: "src/core/answer.ts:119 の条件が !lastCurrent && conflicts.length===0 のため、検索結果に conflicts がある場合は全 claim を捨てても not_found=false になり、citations に conflicts の両ノートが入る。再現: 美咲・『出張の宿泊費の上限はいくら？』・stub が note_ids=[] と捏造 id の claim だけを返す → not_found=false、citations=[travel-memo, travel-new]、answer は食い違いの併記文だけ。tests/db/answer.test.ts:100 は conflicts が出ない質問を意図的に選んでいて、この境界を踏んでいない"
     evidence: src/core/answer.ts:119
 
   - id: AC-107
@@ -240,28 +216,24 @@ acceptance:
     kind: functional
     given: "AC-037 と同じ状態"
     when: "ask する"
-    then: "answer 内のすべての [n] と citations の marker が1対1で一致し、各 citation の title と
-      chunk は検索結果の Hit と等しい値を返す"
+    then: "answer 内のすべての [n] と citations の marker が1対1で一致し、各 citation の title と chunk は検索結果の Hit と等しい値を返す"
     priority: must
     verify: test
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: answer 内の [n] の集合と citations の marker が一致し、各 citation の title/chunk が検索
-      Hit と等しいことを検証
+    note: answer 内の [n] の集合と citations の marker が一致し、各 citation の title/chunk が検索 Hit と等しいことを検証
     evidence: tests/db/answer.test.ts:141
 
   - id: AC-110
     kind: functional
     given: "検索結果はあるが、スタブが not_found=true を返す"
     when: "ask する"
-    then: "not_found=true で、検索結果の上位最大3件を『近い情報』として citations 付きで answer に含む Answer
-      を返す"
+    then: "not_found=true で、検索結果の上位最大3件を『近い情報』として citations 付きで answer に含む Answer を返す"
     priority: must
     verify: test
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: not_found=true、answer が近い情報の接頭辞で始まり、citations が検索上位3ノートと一致し、各 marker が
-      answer に含まれることを検証
+    note: not_found=true、answer が近い情報の接頭辞で始まり、citations が検索上位3ノートと一致し、各 marker が answer に含まれることを検証
     evidence: tests/db/answer.test.ts:120

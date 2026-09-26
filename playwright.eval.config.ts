@@ -7,5 +7,13 @@ export default defineConfig({
   ...base,
   testDir: "e2e/eval",
   testIgnore: [],
-  webServer: { ...(base.webServer as object), env: {} } as typeof base.webServer,
+  use: { ...base.use, baseURL: "http://127.0.0.1:3100" },
+  // テスト用の合成器を確実に無効にし、既存サーバ（ANKB_TEST_MODE=1 の dev サーバ）も再利用しない
+  webServer: {
+    command: "npx next dev -p 3100",
+    url: "http://127.0.0.1:3100/login",
+    reuseExistingServer: false,
+    timeout: 180_000,
+    env: { ANKB_TEST_MODE: "0" },
+  },
 });
