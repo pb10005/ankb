@@ -18,6 +18,10 @@ export function db(): pg.Pool {
   pool ??= new pg.Pool({ connectionString: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres", max: 2 });
   return pool;
 }
+/** ask の回数上限（AS-054）は1時間の窓なので、再実行を重ねても上限に当たらないよう各テストの前に使用記録を消す */
+export async function resetAskQuota() {
+  await db().query("delete from public.ask_usage");
+}
 export async function closeDb() {
   await pool?.end();
   pool = undefined;

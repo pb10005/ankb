@@ -1,12 +1,13 @@
 // @covers AC-069, AC-072, AC-073, AC-074, AC-075, AC-076, AC-077, AC-078, AC-082, AC-083, AC-084, AC-127, AC-128, AC-129, AC-134
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { closeDb, db, seedNote, type UserName } from "./helpers";
+import { closeDb, db, seedNote, type UserName, resetAskQuota } from "./helpers";
 import { AS_027_TOOLS, exec, loginWithWebMcp, toolNames, waitTools, webmcpContext } from "./webmcp-helpers";
 import { call, mcpClient } from "./mcp-helpers";
 import { loadScenarios, loadWorkspaces, noteId } from "../src/seed/fixtures";
 
 test.afterAll(closeDb);
+test.beforeEach(resetAskQuota);
 test.describe.configure({ timeout: 120_000 });
 
 test("AC-072: 未ログインで /login を開いても registerTool は1回も呼ばれない", async ({ browser }) => {
@@ -113,7 +114,14 @@ test("AC-083: 回答を表示している画面で highlight_citation('[1]') を
   expect(r).toEqual({ highlighted: "[1]" });
   const panel = page.getByRole("complementary", { name: "根拠" });
   await expect(panel).toHaveAttribute("data-highlighted", "true");
+  // 表示しているのが [1] の根拠そのものであること（見出しの marker が [1]、本文が [1] の抜粋）
+  await expect(panel.getByRole("heading", { level: 3 })).toHaveText(/^\[1\] /);
   await expect(panel.locator("pre")).toContainText("宿泊費");
+  const chunk1 = await panel.locator("pre").textContent();
+  // 別の marker を指定すると表示が切り替わる（[1] を固定で出しているのではない）
+  expect(await exec(page, "highlight_citation", { marker: "[2]" })).toEqual({ highlighted: "[2]" });
+  await expect(panel.getByRole("heading", { level: 3 })).toHaveText(/^\[2\] /);
+  expect(await panel.locator("pre").textContent()).not.toBe(chunk1);
   await context.close();
 });
 

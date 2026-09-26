@@ -1,8 +1,9 @@
 // @covers AC-045, AC-046
 import { test, expect } from "@playwright/test";
-import { closeDb, loginAs } from "./helpers";
+import { closeDb, loginAs, resetAskQuota } from "./helpers";
 
 test.afterAll(closeDb);
+test.beforeEach(resetAskQuota);
 
 const Q = "出張の宿泊費の上限はいくら？";
 
