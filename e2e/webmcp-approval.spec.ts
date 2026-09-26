@@ -1,4 +1,4 @@
-// @covers AC-079, AC-080, AC-081, AC-125, AC-126
+// @covers AC-079, AC-080, AC-081, AC-125, AC-126, AC-141
 import { test, expect, type Page } from "@playwright/test";
 import { closeDb, db, seedNote, seedProposal } from "./helpers";
 import { exec, loginWithWebMcp, waitTools } from "./webmcp-helpers";
@@ -104,5 +104,24 @@ test("AC-126: (a)『後で』は deferred、(b) signal の abort と (c) 画面�
   await waitTools(page, 12);
 
   for (const r of [a.rel, b.rel, c.rel]) expect(await state(r)).toBe("proposed");
+  await context.close();
+});
+
+test("AC-141: ダイアログ表示中に別の提案で request_relation_approval を呼ぶと BUSY を返し、ダイアログは R1 のまま、R2 は proposed のまま", async ({ browser }) => {
+  const r1 = await proposal();
+  const r2 = await proposal();
+  const { context, page } = await loginWithWebMcp(browser, "misaki");
+  const dialog = page.getByRole("dialog", { name: "承認の確認" });
+  await startApproval(page, r1.rel);
+  await expect(dialog).toBeVisible();
+  const before = await dialog.locator(".proposal-message").textContent();
+  expect(before).toContain(r1.a.title);
+  const r = await exec(page, "request_relation_approval", { relation_id: r2.rel });
+  expect(r).toMatchObject({ code: "BUSY" });
+  await expect(dialog).toHaveCount(1);
+  await expect(dialog.locator(".proposal-message")).toHaveText(before!);
+  expect(await state(r2.rel)).toBe("proposed");
+  await dialog.getByRole("button", { name: "後で" }).click();
+  expect(await result(page)).toEqual({ value: { state: "deferred" } });
   await context.close();
 });

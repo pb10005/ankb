@@ -5,11 +5,11 @@ import { pageContext, type PageContextValue } from "./context-store";
 
 /** 表示中の画面の文脈を登録する（エージェントの get_current_context が読む） */
 export function PageContext(props: PageContextValue) {
-  const { note_id, title, query } = props;
+  const { note_id, query } = props;
   useEffect(() => {
-    const v = { note_id, title, query };
+    const v = { note_id, query };
     pageContext.set(v);
     return () => pageContext.clear(v);
-  }, [note_id, title, query]);
+  }, [note_id, query]);
   return null;
 }

@@ -43,7 +43,7 @@ export default async function NotePage({
       <p>
         <Link href="/notes">← ノート一覧</Link>
       </p>
-      <PageContext note_id={note.id} title={note.title} />
+      <PageContext note_id={note.id} />
       <h1>{note.title}</h1>
       {error && ERROR_MESSAGES[error] && (
         <p role="alert" className="error">

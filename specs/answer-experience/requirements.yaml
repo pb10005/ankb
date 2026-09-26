@@ -8,8 +8,7 @@ id: FEAT-010
 title: "回答UIと経緯の再構成: 引用・旧情報・矛盾を画面で区別し、決定の経緯を時系列で示す"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "健太が『なぜそう決めたか』をたどれるように、経緯を問う質問には関連ノートを日付順に並べて判断が変わった時点を示し、美咲が回答の根拠をワンクリ\
-  ックで確かめられるように、Web UI に引用・旧情報・矛盾を区別して表示する。回答の契約（FEAT-005）の上に乗る表示と形式の要件を扱う。"
+intent: "健太が『なぜそう決めたか』をたどれるように、経緯を問う質問には関連ノートを日付順に並べて判断が変わった時点を示し、美咲が回答の根拠をワンクリックで確かめられるように、Web UI に引用・旧情報・矛盾を区別して表示する。回答の契約（FEAT-005）の上に乗る表示と形式の要件を扱う。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -21,8 +20,7 @@ out_of_scope:
 
 assumptions:
   - id: AS-019
-    statement: "『なぜ』『経緯』『いつから』を含む質問は timeline 形式として扱う。並び順は LLM の返す日付ではなく、引用ノートの
-      effective_from（無ければ作成日時）でサーバが決める"
+    statement: "『なぜ』『経緯』『いつから』を含む質問は timeline 形式として扱う。並び順は LLM の返す日付ではなく、引用ノートの effective_from（無ければ作成日時）でサーバが決める"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -32,9 +30,7 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-072
-    statement: "Web UI の E2E テストでは、環境変数 ANKB_TEST_MODE=1 のときだけ決定的な合成器（資料の1行目を主張として返す
-      Echo と、常に失敗する Failing。後者は cookie ankb-test-synth=fail
-      で選ぶ）を使う。ANKB_TEST_MODE が無い本番では Claude を呼ぶ"
+    statement: "Web UI の E2E テストでは、環境変数 ANKB_TEST_MODE=1 のときだけ決定的な合成器（資料の1行目を主張として返す Echo と、常に失敗する Failing。後者は cookie ankb-test-synth=fail で選ぶ）を使う。ANKB_TEST_MODE が無い本番では Claude を呼ぶ"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -46,15 +42,13 @@ acceptance:
     kind: functional
     given: "決済サービス選定シナリオ（議事録3本・比較表・一度覆った判断）"
     when: "健太が『決済サービスをなぜA社にしたんだっけ？』を ask する"
-    then: "citations を note の effective_from（無ければ作成日時）の昇順で並べ、覆った判断を引用する claim
-      の直後に『この時点で判断が変わりました』を含み、最後の段落に現行の決定のマーカーを含む Answer を返す"
+    then: "citations を note の effective_from（無ければ作成日時）の昇順で並べ、覆った判断を引用する claim の直後に『この時点で判断が変わりました』を含み、最後の段落に現行の決定のマーカーを含む Answer を返す"
     priority: must
     verify: test
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: stub が日付順を崩して返しても citations が effective_from
-      昇順になること、覆った判断の直後に『この時点で判断が変わりました』、最後の段落に現行決定のマーカーを含むことを検証
+    note: stub が日付順を崩して返しても citations が effective_from 昇順になること、覆った判断の直後に『この時点で判断が変わりました』、最後の段落に現行決定のマーカーを含むことを検証
     evidence: tests/db/answer.test.ts:169
 
   - id: AC-045
@@ -67,11 +61,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "回帰なし。playwright 2/2 pass: 失敗する合成器でエラー文言の alert を表示し、回答リージョンと answer-text
-      が無いことを検証。tests/db/answer.test.ts:220 で実 ClaudeSynthesizer が SDK の
-      APIConnectionTimeoutError / InternalServerError(500) を UpstreamError に変換し
-      ask が reject することを検証（synthesizer.ts:110-112）。actions.ts:25-30
-      はすべての例外を同じ文言に変換"
+    note: "回帰なし。playwright 2/2 pass: 失敗する合成器でエラー文言の alert を表示し、回答リージョンと answer-text が無いことを検証。tests/db/answer.test.ts:220 で実 ClaudeSynthesizer が SDK の APIConnectionTimeoutError / InternalServerError(500) を UpstreamError に変換し ask が reject することを検証（synthesizer.ts:110-112）。actions.ts:25-30 はすべての例外を同じ文言に変換"
     evidence: e2e/ask.spec.ts:9
 
   - id: AC-046
@@ -84,16 +74,14 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: conflicts 表示あり、[1]
-      クリックで根拠パネルに該当タイトルのリンクとチャンク（宿泊費）を表示、旧規程に『旧情報』バッジを表示することを検証
+    note: conflicts 表示あり、[1] クリックで根拠パネルに該当タイトルのリンクとチャンク（宿泊費）を表示、旧規程に『旧情報』バッジを表示することを検証
     evidence: e2e/ask.spec.ts:21
 
   - id: AC-047
     kind: functional
     given: "UC1・UC2 の評価セット（実 Claude API）"
     when: "評価スクリプトで各質問を10回ずつ ask する"
-    then: "評価スクリプトが、kind=current で superseded ノートを引用した claim と outdated_mentions
-      以外で旧規程の金額を含む文の件数を0件と記録する"
+    then: "評価スクリプトが、kind=current で superseded ノートを引用した claim と outdated_mentions 以外で旧規程の金額を含む文の件数を0件と記録する"
     priority: should
     verify: manual
     evidence: ""
@@ -134,8 +122,14 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "合成器境界でUpstreamErrorを注入（ANKB_TEST_MODEかつ非本番のみ）。isError(160)、code=UPSTREAM\
-      _ERROR(161)、structuredContent無し(162)、citationsを含まない(163)。Claude例外→Upstrea\
-      mError変換自体はsrc/core/synthesizer.ts:110-111。npx playwright test
-      e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    note: "合成器境界でUpstreamErrorを注入（ANKB_TEST_MODEかつ非本番のみ）。isError(160)、code=UPSTREAM_ERROR(161)、structuredContent無し(162)、citationsを含まない(163)。Claude例外→UpstreamError変換自体はsrc/core/synthesizer.ts:110-111。npx playwright test e2e/mcp.spec.ts: 13 passed (2026-09-26)"
     evidence: e2e/mcp.spec.ts:160
+  - id: AC-140
+    kind: functional
+    given: 美咲がログインしている
+    when: 検索画面 /search で旧版と新版のあるテーマ（例:『宿泊費』）を検索する
+    then: hits のタイトルを検索結果に一覧し、possibly_outdated のヒットには『更新されている可能性』のバッジを付け、superseded_context のノートは検索結果とは別の『古い情報』欄に『旧情報』のバッジ付きで表示する
+    priority: should
+    verify: test
+    status: pending
+    attempts: 0

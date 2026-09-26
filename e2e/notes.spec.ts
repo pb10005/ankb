@@ -154,9 +154,12 @@ test("AC-026: 健太の画面には（edit 共有でも）公開範囲と共有�
 test("AC-131: 閲覧できないノートを開くと、存在しない id と同じ 404 画面を表示する", async ({ browser }) => {
   const hidden = await seedNote({ owner: "misaki", visibility: "private", title: `健太には見えない ${Date.now()}` });
   const kenta = await loginAs(browser, "kenta");
+  // 404 画面の描画を待ってから本文を比べる（初回コンパイル中に空の body を読まないように）
   const r1 = await kenta.page.goto(`/notes/${hidden.id}`);
+  await expect(kenta.page.getByRole("heading", { name: "404" })).toBeVisible();
   const hiddenText = await kenta.page.locator("body").innerText();
   const r2 = await kenta.page.goto("/notes/00000000-0000-4000-8000-000000000000");
+  await expect(kenta.page.getByRole("heading", { name: "404" })).toBeVisible();
   const missingText = await kenta.page.locator("body").innerText();
   expect(r1?.status()).toBe(404);
   expect(r2?.status()).toBe(404);

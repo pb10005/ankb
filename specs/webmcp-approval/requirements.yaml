@@ -8,9 +8,7 @@ id: FEAT-011
 title: "WebMCP の承認フロー: エージェントはダイアログを開くまで、確定は人間のクリックだけ"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "ブラウザ内エージェントは承認ダイアログを開けても、置き換え関係を確定できてはならない（§2.2
-  D、§6.2）。request_relation_approval
-  が開いたダイアログは、人間の実際のクリックでだけ確定し、権限の無い提案・保留・中断・遷移のいずれでも提案の状態を変えない。"
+intent: "ブラウザ内エージェントは承認ダイアログを開けても、置き換え関係を確定できてはならない（§2.2 D、§6.2）。request_relation_approval が開いたダイアログは、人間の実際のクリックでだけ確定し、権限の無い提案・保留・中断・遷移のいずれでも提案の状態を変えない。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -23,16 +21,13 @@ out_of_scope:
 
 assumptions:
   - id: AS-029
-    statement: "承認・却下のボタンは isTrusted=false のイベントを無視する。CDP 経由の合成入力は isTrusted=true
-      になるため防げず、残存リスクとして受容する。WebMCP の仕様にユーザー確認API（Issue #165
-      で議論中）が入った場合はそちらへ移行する"
+    statement: "承認・却下のボタンは isTrusted=false のイベントを無視する。CDP 経由の合成入力は isTrusted=true になるため防げず、残存リスクとして受容する。WebMCP の仕様にユーザー確認API（Issue #165 で議論中）が入った場合はそちらへ移行する"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-082
-    statement: "承認ダイアログは同時に1つだけ表示する。表示中に request_relation_approval
-      が再度呼ばれた場合はダイアログを出さず {code: BUSY} を返し、提案は proposed のまま"
-    status: assumed
+    statement: "承認ダイアログは同時に1つだけ表示する。表示中に request_relation_approval が再度呼ばれた場合はダイアログを出さず {code: BUSY} を返し、提案は proposed のまま"
+    status: confirmed
     owner: pb10005
     resolve_by: "2026-10-10"
 
@@ -49,8 +44,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ダイアログ表示(36)かつ1s後もDBでproposed(38)。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "ダイアログ表示(36)かつ1s後もDBでproposed(38)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp-approval.spec.ts:31
 
   - id: AC-080
@@ -63,8 +57,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ページ内element.click()後もダイアログ表示のまま(53)かつproposed(54)。npx playwright test
-      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "ページ内element.click()後もダイアログ表示のまま(53)かつproposed(54)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp-approval.spec.ts:42
 
   - id: AC-081
@@ -77,8 +70,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "実クリックでツール結果{state:confirmed}(63)かつDBがconfirmed(64)。npx playwright test
-      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "実クリックでツール結果{state:confirmed}(63)かつDBがconfirmed(64)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp-approval.spec.ts:58
 
   - id: AC-125
@@ -91,23 +83,27 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "旧ノートはkentaのworkspaceノート(美咲は閲覧のみ)。FORBIDDEN(72)かつダイアログ0件(73)かつproposed(74\
-      )。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20
-      passed (2026-09-26)"
+    note: "旧ノートはkentaのworkspaceノート(美咲は閲覧のみ)。FORBIDDEN(72)かつダイアログ0件(73)かつproposed(74)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp-approval.spec.ts:68
 
   - id: AC-126
     kind: functional
     given: "AC-079 の承認ダイアログを表示中"
     when: "(a) 美咲が『後で』を押す (b) execute の signal が abort される (c) 別ページへ遷移する"
-    then: "(a) は deferred を返し、(b)(c) はダイアログを閉じて AbortError で終わり、3ケースとも R は proposed
-      のまま変わらない"
+    then: "(a) は deferred を返し、(b)(c) はダイアログを閉じて AbortError で終わり、3ケースとも R は proposed のまま変わらない"
     priority: must
     verify: test
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "(a)deferred(85)、(b)abortでAbortErrorかつダイアログ消滅(91-92)、(c)戻る遷移でAbortErrorかつ\
-      ダイアログ消滅(102-103)、3件ともproposed(106)。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "(a)deferred(85)、(b)abortでAbortErrorかつダイアログ消滅(91-92)、(c)戻る遷移でAbortErrorかつダイアログ消滅(102-103)、3件ともproposed(106)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp-approval.spec.ts:78
+  - id: AC-141
+    kind: functional
+    given: request_relation_approval で提案 R1 の承認ダイアログを表示している
+    when: エージェントが別の提案 R2 で request_relation_approval を execute する
+    then: "{code:'BUSY'} を返し、表示中のダイアログは R1 のままで、R2 は proposed のまま"
+    priority: should
+    verify: test
+    status: pending
+    attempts: 0

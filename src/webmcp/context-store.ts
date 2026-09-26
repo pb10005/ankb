@@ -1,8 +1,9 @@
 // @covers AC-075, AC-076, AC-082, AC-134
 // @assumption AS-053
+// @assumption AS-083
 // 画面の文脈（開いているノート・検索クエリ）と、エディタの未保存状態・下書きの受け渡しを持つクライアント側のストア
 
-export type PageContextValue = { note_id?: string; title?: string; query?: string };
+export type PageContextValue = { note_id?: string; query?: string };
 
 let context: PageContextValue = {};
 let dirty = false;

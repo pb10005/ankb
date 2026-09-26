@@ -1,11 +1,11 @@
 "use client";
 // @covers AC-072, AC-073, AC-074, AC-075, AC-076, AC-077, AC-078, AC-082, AC-083, AC-084, AC-127, AC-128, AC-129, AC-134
-// @covers AC-079, AC-080, AC-081, AC-125, AC-126
+// @covers AC-079, AC-080, AC-081, AC-125, AC-126, AC-141
 // @assumption AS-027
 // @assumption AS-028
 // @assumption AS-029
 // @assumption AS-031
-// @assumption AS-082
+// @assumption AS-083
 // @assumption AS-053
 // @assumption AS-056
 // WebMCP（document.modelContext）へのツール登録。ログイン中だけ登録し、ログアウト・アンマウント・別タブのログアウトで解除する。
@@ -59,6 +59,8 @@ export function WebMcpProvider() {
   // 画面遷移したら、開いている承認ダイアログは閉じて中断する（AC-126 (c)）
   useEffect(() => {
     pathRef.current = pathname;
+    // draft_note の下書きは /notes/new の編集画面にだけ引き継ぎ、そこから離れたら捨てる（AS-083）
+    if (pathname !== "/notes/new") draftStore.clear();
     const a = approvalRef.current;
     if (a) {
       approvalRef.current = null;
@@ -140,9 +142,9 @@ export function WebMcpProvider() {
         annotations: { readOnlyHint: true },
         execute: async () => {
           const c = pageContext.get();
+          // §7.2 どおりノート ID・検索クエリ・選択範囲だけを返す
           return {
-            path: pathRef.current,
-            ...(c.note_id ? { note_id: c.note_id, title: c.title } : {}),
+            ...(c.note_id ? { note_id: c.note_id } : {}),
             ...(c.query ? { query: c.query } : {}),
             selection: window.getSelection()?.toString() ?? "",
           };

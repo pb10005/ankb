@@ -201,7 +201,7 @@ test("AC-069: Web UI の検索API・サーバMCP・WebMCP の search_knowledge �
   await context.close();
 });
 
-test("AC-127: 各ユーザーで12ツールに閲覧できないノートの id を渡しても、不可視ノートの情報を返さず NOT_FOUND で画面は遷移しない", async ({ browser }) => {
+test("AC-127: 各ユーザーで id を取る5ツールは不可視ノートに存在しない id と同じ NOT_FOUND を返して遷移せず、12ツールの結果に不可視ノートの情報を含まない", async ({ browser }) => {
   const ws = loadWorkspaces();
   for (const user of ["misaki", "kenta", "sho"] as UserName[]) {
     const memberOf = new Set(ws.workspaces.filter((w) => w.members.some((m) => m.user === user)).map((w) => w.slug));
@@ -226,6 +226,9 @@ test("AC-127: 各ユーザーで12ツールに閲覧できないノートの id 
     ];
     const hiddenResults = await byId(hid);
     const missingResults = await byId(missing);
+    // id を取る5ツールは画面を遷移させない
+    await page.waitForTimeout(300);
+    expect(page.url()).toBe(url);
     const others = [
       await exec(page, "search_knowledge", { query: "合言葉" }),
       await exec(page, "ask", { question: "合言葉は何？" }),
@@ -233,7 +236,7 @@ test("AC-127: 各ユーザーで12ツールに閲覧できないノートの id 
       await exec(page, "get_current_context"),
       await exec(page, "highlight_citation", { marker: hid }),
       await exec(page, "request_relation_approval", { relation_id: rel }),
-      await exec(page, "draft_note", { title: `下書き ${hid.slice(0, 4)}`, body: "" }).then(async (r) => (await page.goto(url), r)),
+      await exec(page, "draft_note", { title: `下書き ${hid.slice(0, 4)}`, body: "" }),
     ];
     for (const r of hiddenResults) expect(r).toMatchObject({ code: "NOT_FOUND" });
     expect(hiddenResults.map((r) => (r as { code: string }).code)).toEqual(missingResults.map((r) => (r as { code: string }).code));
@@ -244,7 +247,6 @@ test("AC-127: 各ユーザーで12ツールに閲覧できないノートの id 
       expect(json, `${user}: ${n.slug}`).not.toContain(n.title);
       for (const frag of n.body.match(/合言葉は[^。]+|[0-9,]+円/g) ?? []) expect(json, `${user}: ${frag}`).not.toContain(frag);
     }
-    expect(page.url()).toBe(url);
     await context.close();
   }
 });
