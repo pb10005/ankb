@@ -49,9 +49,10 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ダイアログ表示(36)かつ1s後もDBでproposed(38)。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp-approval.spec.ts:31
+    note: "ダイアログ表示(36) かつ1s後も proposed(38)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts: 19 passed / 2 failed(AC-069,AC-083 は環境要因)
+      2026-09-26、provider.tsx の未コミット変更(abort 時の registerTool reject をログしない)込み"
+    evidence: e2e/webmcp-approval.spec.ts:38
 
   - id: AC-080
     kind: functional
@@ -63,9 +64,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ページ内element.click()後もダイアログ表示のまま(53)かつproposed(54)。npx playwright test
-      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp-approval.spec.ts:42
+    note: "element.click() 後もダイアログ表示(53) かつ proposed(54)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp-approval.spec.ts:54
 
   - id: AC-081
     kind: functional
@@ -77,9 +80,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "実クリックでツール結果{state:confirmed}(63)かつDBがconfirmed(64)。npx playwright test
-      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp-approval.spec.ts:58
+    note: "実クリックで結果 confirmed(63) かつ DB confirmed(64)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp-approval.spec.ts:63
 
   - id: AC-125
     kind: functional
@@ -91,10 +96,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "旧ノートはkentaのworkspaceノート(美咲は閲覧のみ)。FORBIDDEN(72)かつダイアログ0件(73)かつproposed(74\
-      )。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20
-      passed (2026-09-26)"
-    evidence: e2e/webmcp-approval.spec.ts:68
+    note: "FORBIDDEN(72)・ダイアログ0件(73)・proposed(74)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp-approval.spec.ts:72
 
   - id: AC-126
     kind: functional
@@ -107,10 +113,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "(a)deferred(85)、(b)abortでAbortErrorかつダイアログ消滅(91-92)、(c)戻る遷移でAbortErrorかつ\
-      ダイアログ消滅(102-103)、3件ともproposed(106)。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp-approval.spec.ts:78
+    note: "(a)deferred(85)、(b)AbortError+ダイアログ消滅(91-92)、(c)AbortError+ダイアログ消滅(102-1\
+      03)、3件 proposed(106)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts: 19 passed / 2 failed(AC-069,AC-083 は環境要因)
+      2026-09-26、provider.tsx の未コミット変更(abort 時の registerTool reject をログしない)込み"
+    evidence: e2e/webmcp-approval.spec.ts:85
   - id: AC-141
     kind: functional
     given: request_relation_approval で提案 R1 の承認ダイアログを表示している
@@ -121,8 +128,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "R1 ダイアログ表示中に R2 で実行し code=BUSY(120)、ダイアログは1個のままで文言が R1 のまま(121-122、R1
-      旧ノートのタイトルを含むことを118で確認)、R2 の state=proposed(123)。npx playwright test
-      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts e2e/search.spec.ts: 22
-      passed (2026-09-26)"
+    note: "BUSY(120)、ダイアログ1個で文言 R1 のまま(121-122)、R2 proposed(123)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
     evidence: e2e/webmcp-approval.spec.ts:120

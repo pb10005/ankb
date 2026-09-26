@@ -235,7 +235,11 @@ export function WebMcpProvider() {
     ];
 
     for (const t of tools) {
-      mc.registerTool(t, { signal: controller.signal }).catch((e) => console.error(`[ankb] WebMCP ツール ${t.name} の登録に失敗:`, e));
+      mc.registerTool(t, { signal: controller.signal }).catch((e) => {
+        // 解除（アンマウント・ログアウト・StrictMode の再実行）で abort した結果の reject は失敗ではない
+        if (controller.signal.aborted) return;
+        console.error(`[ankb] WebMCP ツール ${t.name} の登録に失敗:`, e);
+      });
     }
 
     // 別タブのログアウトで解除する（AC-129）

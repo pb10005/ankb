@@ -102,9 +102,10 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "stub注入済み未ログインで/login表示・1s待機後 registerTool 呼び出し0回(17)。npx playwright test
-      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:12
+    note: "未ログイン /login で registerTool 呼び出し0回。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts: 19 passed / 2 failed(AC-069,AC-083 は環境要因)
+      2026-09-26、provider.tsx の未コミット変更(abort 時の registerTool reject をログしない)込み"
+    evidence: e2e/webmcp.spec.ts:18
 
   - id: AC-073
     kind: functional
@@ -116,10 +117,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "registerToolに渡したnameの集合とgetTools()がAS-027の12件と一致(24-25)。npx playwright
-      test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed
-      (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:21
+    note: "registerTool の name 集合と getTools() が AS-027 の12件と一致(25-26)。npx playwright
+      test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp.spec.ts:25
 
   - id: AC-074
     kind: functional
@@ -132,11 +134,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ログアウト後getTools()==[](33-34)。stubはsignal
-      abort時のみ削除し、追加プローブでログアウトがソフト遷移(windowマーカー保持)であることを確認済み=abortによる解除。npx
-      playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed
-      (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:29
+    note: "ログアウト後 getTools()==[](34-35)。stub は signal abort 時のみ削除。npx playwright
+      test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp.spec.ts:35
 
   - id: AC-075
     kind: functional
@@ -148,10 +150,10 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ノートNを開き本文を選択後 get_current_context の note_id=N(46) かつ
-      selection=選択文字列(47)。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts e2e/search.spec.ts: 22 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:46
+    note: "note_id=N(46) かつ selection=選択文字列(47)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更込み"
+    evidence: e2e/webmcp.spec.ts:47
 
   - id: AC-076
     kind: functional
@@ -163,10 +165,9 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ノート表示で note_id=N を確認(56)後、検索画面で宿泊費を検索し note_id 非含有(63) かつ
-      query=宿泊費(64)。遷移は page.goto だが、page-context.tsx:12
-      がアンマウント時に文脈を消すのでクライアント側遷移でも同じ。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts e2e/search.spec.ts: 22 passed (2026-09-26)"
+    note: "note_id 非含有(63) かつ query=宿泊費(64)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts: 19 passed / 2 failed(AC-069,AC-083 は環境要因)
+      2026-09-26、provider.tsx の未コミット変更(abort 時の registerTool reject をログしない)込み"
     evidence: e2e/webmcp.spec.ts:63
 
   - id: AC-077
@@ -179,10 +180,10 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "travel-oldを開きget_current_contextのnote_idでlineageを呼び、[old,new]の順かつ日付昇順(73\
-      -76)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts:
-      20 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:67
+    note: "lineage=[old,new](76) かつ日付昇順(77)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts: 19 passed / 2 failed(AC-069,AC-083 は環境要因)
+      2026-09-26、provider.tsx の未コミット変更(abort 時の registerTool reject をログしない)込み"
+    evidence: e2e/webmcp.spec.ts:76
 
   - id: AC-078
     kind: functional
@@ -194,9 +195,10 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "比較ビューの左右regionにAとBの見出しが表示(87-88)。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:80
+    note: "結果 opened=[A,B](86)、比較ビュー左右 region に A/B の見出し(88-89)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更込み"
+    evidence: e2e/webmcp.spec.ts:89
 
   - id: AC-082
     kind: functional
@@ -208,10 +210,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "draft_note 後 /notes/new のエディタでタイトル=title(100)・本文=body(101) かつ notes
-      件数が実行前と同じ(102)。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts e2e/search.spec.ts: 22 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:100
+    note: "エディタ title/body 一致(100-101) かつ notes 件数不変(102)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp.spec.ts:102
 
   - id: AC-083
     kind: functional
@@ -241,10 +244,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "open_noteでh1がXSS文字列そのもの(126)かつwindow.__xssがundefined(127)。npx playwright
-      test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed
-      (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:120
+    note: "h1 が XSS 文字列そのもの(134) かつ window.__xss undefined(135)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp.spec.ts:134
 
   - id: AC-127
     kind: functional
@@ -258,13 +262,11 @@ acceptance:
     status: pass
     attempts: 1
     verified_at: 2026-09-26
-    note: "then の全条件をアサート済み:
-      5ツールNOT_FOUND(268)、存在しないidと結果オブジェクト丸ごと一致=message含む(270)、遷移なし(258)、件数=結果中の\
-      全ノートid(note_id/from/to/note_ids)がRLS可視集合に含まれ(274-276)かつ不可視ノート間のAI提案relがli\
-      st_pending_relationsに出ない(278)、12ツール結果に不可視ノートのid/title/本文断片なし(280-283、不可視集\
-      合はfixture+workspace所属から独立算出、全不可視ノートに断片あり)。出力に数値の件数フィールドは無い(src/mcp/server\
-      .ts)。npx playwright test e2e/webmcp.spec.ts -g AC-127: 1 passed
-      (2026-09-26)"
+    note: "5ツール NOT_FOUND(268)・存在しない id と結果同一(270)・遷移なし(258)・参照ノート id が RLS
+      可視集合内(276-278)・不可視 id/title/断片なし(282-286)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
     evidence: e2e/webmcp.spec.ts:268
 
   - id: AC-128
@@ -277,10 +279,12 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "dashboard→一覧→ノート→dashboard→検索→dashboardのLink遷移後、12件の名前が各1回(159)かつregiste\
-      rTool例外0件(160)。プローブでこれらの遷移がソフト遷移であることを確認。npx playwright test
-      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:147
+    note: "ソフト遷移後12件が各1回(167) かつ stub が記録する registerTool 例外0件(168)。例外は stub 側
+      log.errors で数えるので今回の console.error 抑止では隠れない。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed / 2
+      failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp.spec.ts:168
 
   - id: AC-129
     kind: functional
@@ -292,10 +296,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "タブBログアウト後、タブAで取得済みexecuteがUNAUTHENTICATEDのみを返し(176)、タブAのツール0件(177)。npx
-      playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed
-      (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:164
+    note: "解除前に取得した execute が UNAUTHENTICATED のみ(184) かつタブAのツール0件(185)。npx
+      playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 19 passed
+      / 2 failed(AC-069,AC-083 は環境要因) 2026-09-26、provider.tsx の未コミット変更(abort 時の
+      registerTool reject をログしない)込み"
+    evidence: e2e/webmcp.spec.ts:184
 
   - id: AC-134
     kind: functional
@@ -307,7 +312,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "open_note/draft_noteがUNSAVED_CHANGES(139-140)、URLは/notes/newのまま(142)かつタイ\
-      トル入力が書きかけのまま(143)。npx playwright test e2e/webmcp.spec.ts
-      e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:131
+    note: "open_note/draft_note が UNSAVED_CHANGES(147-148)、URL
+      不変(150)、タイトル入力不変(151)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts: 19 passed / 2 failed(AC-069,AC-083 は環境要因)
+      2026-09-26、provider.tsx の未コミット変更込み"
+    evidence: e2e/webmcp.spec.ts:147
