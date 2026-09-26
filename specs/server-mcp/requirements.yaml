@@ -103,8 +103,13 @@ acceptance:
     then: "search_knowledge の結果に P を含まず、get_note は存在しない id と同じ NOT_FOUND を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "索引済みの美咲private
+      Pが翔の検索結果に無い(41)、get_note(P)がNOT_FOUNDかつ存在しないidとcontent完全一致(44-45)。npx
+      playwright test e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:41
 
   - id: AC-063
     kind: functional
@@ -113,8 +118,12 @@ acceptance:
     then: "state=proposed / proposed_by=agent の note_relation を作成する"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "DB行で state=proposed / proposed_by=agent / type=supersedes を確認。npx
+      playwright test e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:56
 
   - id: AC-064
     kind: functional
@@ -124,8 +133,13 @@ acceptance:
     then: "いずれもエラーを返し、提案の state は proposed のまま変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "update_note(status=superseded)がisError(67)、未登録ツールresolve_relationもエラー(69\
+      )、DBでstate=proposed(70)・note status=active(71)。npx playwright test
+      e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:67
 
   - id: AC-065
     kind: functional
@@ -136,8 +150,13 @@ acceptance:
       ヘッダを返し、ツールを実行しない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "(a)-(d)の4ケースで401とresource_metadata付きWWW-Authenticate(93-94)、create_noteが\
+      作られていないことをDBで確認(96)。期限切れJWTは本物の鍵で署名・client_id付きでexpのみ過去。npx playwright
+      test e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:93
 
   - id: AC-066
     kind: functional
@@ -147,8 +166,12 @@ acceptance:
       を返してノートを作成しない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "1回目はDBでprivate/draft(107)、2回目はVALIDATION_ERROR(110)かつ同タイトル行0件(111)。npx
+      playwright test e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:107
 
   - id: AC-067
     kind: functional
@@ -157,8 +180,12 @@ acceptance:
     then: "権限エラーを返し、ノートの本文は変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "view共有ノートのupdate_noteがFORBIDDEN(120)、DB本文不変(121)。npx playwright test
+      e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:120
 
   - id: AC-068
     kind: functional
@@ -167,8 +194,12 @@ acceptance:
     then: "B の id・タイトルを含まず、A と C を日付の昇順で並べた結果を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "confirmedのA<-B<-C連鎖でBはprivate。結果idが[A,C]の日付昇順(141)、Bのid・タイトルを含まない(142-14\
+      3)。npx playwright test e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:141
 
   - id: AC-069
     kind: functional
@@ -188,8 +219,14 @@ acceptance:
     then: "閲覧できないノートの id・title・本文断片・件数を含む返り値が1件も無い"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "5ユーザー×8ツール（search2・ask・get_note3・lineage3・list_pending・update・propose・cr\
+      eate）で不可視ノートのid・title・合言葉/金額断片が出ないこと(206-210)、不可視id指定のupdate/proposeがNOT_\
+      FOUND(212-213)。件数はSearchResultに件数フィールドが無く、NOT_FOUNDの一様化で担保。npx playwright
+      test e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:206
 
   - id: AC-071
     kind: functional
@@ -211,8 +248,15 @@ acceptance:
     then: "両方ともエラーを返して拒否し、R は proposed、visibility は変わらない"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "OAuthトークンでREST直叩き:
+      rpc/resolve_relationとnotes.visibility更新がともにerror(179-180)、DBでR=proposed(1\
+      81)・visibility=workspace(182)。拒否はDB側
+      is_oauth_client()（schema_rls.sql:119,200,294）。npx playwright test
+      e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:179
 
   - id: AC-123
     kind: functional
@@ -222,8 +266,14 @@ acceptance:
       型（§7.3）のスキーマ検証を通る structuredContent を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "全ツールoutputSchema定義(25)、search_knowledge/askのstructuredContentがSearchResu\
+      ltSchema/AnswerSchemaを通過(28,31)。スキーマは実装側定義だがdocs
+      §7.3の型とフィールド一致を目視確認（Answerはformatを追加）。ask合成器はテスト用Echo。npx playwright test
+      e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:25
 
   - id: AC-124
     kind: functional
@@ -233,5 +283,10 @@ acceptance:
       relation_state:'proposed'}] を含む structuredContent を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "status=active・possibly_outdated=false・conflicts=[{note_ids:[X,Y],relatio\
+      n_state:'proposed'}]（配列長も一致）をtoMatchObjectで検証。npx playwright test
+      e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:153

@@ -131,5 +131,11 @@ acceptance:
     then: "部分的な answer を含まず code=UPSTREAM_ERROR の isError 結果を返す"
     priority: must
     verify: test
-    status: pending
+    status: pass
     attempts: 0
+    verified_at: 2026-09-26
+    note: "合成器境界でUpstreamErrorを注入（ANKB_TEST_MODEかつ非本番のみ）。isError(160)、code=UPSTREAM\
+      _ERROR(161)、structuredContent無し(162)、citationsを含まない(163)。Claude例外→Upstrea\
+      mError変換自体はsrc/core/synthesizer.ts:110-111。npx playwright test
+      e2e/mcp.spec.ts: 13 passed (2026-09-26)"
+    evidence: e2e/mcp.spec.ts:160
