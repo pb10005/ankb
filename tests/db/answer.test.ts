@@ -234,3 +234,15 @@ describe("旧情報だけが残る場合", () => {
     expect(answer.answer).toContain("以前は上限が別の額だった。（旧情報）");
   });
 });
+
+describe("ask の回数上限", () => {
+  it("AS-054: 並行に呼んでも1時間の上限を超えて記録しない", async () => {
+    const { admin } = await import("../helpers/db");
+    const c = await asUser("yuki");
+    await admin().query("delete from public.ask_usage where user_id = '44444444-4444-4444-8444-444444444444'");
+    const results = await Promise.all(Array.from({ length: 8 }, () => c.rpc("consume_ask_quota", { p_limit: 5 })));
+    expect(results.filter((r) => r.data === true)).toHaveLength(5);
+    const { rows } = await admin().query("select count(*)::int n from public.ask_usage where user_id = '44444444-4444-4444-8444-444444444444'");
+    expect(rows[0].n).toBe(5);
+  });
+});

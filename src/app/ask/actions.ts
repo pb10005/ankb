@@ -1,5 +1,5 @@
 "use server";
-// @covers AC-045, AC-046
+// @covers AC-045, AC-046, AC-119
 import { cookies } from "next/headers";
 import { ask, type Answer } from "@/core/answer";
 import { UpstreamError } from "@/core/synthesizer";

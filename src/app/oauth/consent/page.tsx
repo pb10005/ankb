@@ -32,6 +32,10 @@ export default async function ConsentPage({ searchParams }: { searchParams: Prom
         「{data.client.name}」が、あなたの権限で ankb のノートを検索・閲覧・作成できるようにします。
         承認や公開範囲の変更はできません。
       </p>
+      <p>
+        許可すると <strong data-testid="redirect-host">{new URL(data.redirect_uri).host}</strong> に戻ります。
+        心当たりのない接続先なら許可しないでください。
+      </p>
       <form action={decideAction} className="actions">
         <input type="hidden" name="authorization_id" value={data.authorization_id} />
         <button type="submit" name="decision" value="approve">

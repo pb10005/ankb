@@ -214,3 +214,32 @@ test("AC-070: 全ユーザー×8ツールで、閲覧できないノートの id
     await c.close();
   }
 });
+
+test("AS-080: OAuth トークンで REST を直接叩いても、アーカイブ・公開指定の作成・人間を名乗る提案はできない", async () => {
+  const a = await seedNote({ owner: "sho", visibility: "workspace" });
+  const b = await seedNote({ owner: "sho", visibility: "workspace" });
+  const token = await tokenFor("sho");
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) process.loadEnvFile(".env.local");
+  const direct = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const ws = (await db().query("select workspace_id from public.notes where id = $1", [a.id])).rows[0].workspace_id;
+  const title = `直接作成 ${tok()}`;
+  const r1 = await direct.from("notes").update({ status: "archived" }).eq("id", a.id);
+  const r2 = await direct.from("notes").insert({ id: randomUUID(), workspace_id: ws, owner_id: USER_ID.sho, title, visibility: "workspace" });
+  const r3 = await direct.from("note_relation").insert({ id: randomUUID(), from_note_id: a.id, to_note_id: b.id, type: "related", proposed_by: "user", rationale: "x" });
+  for (const r of [r1, r2, r3]) expect(r.error).not.toBeNull();
+  expect((await noteInDb(a.id)).status).toBe("active");
+  expect((await db().query("select count(*)::int n from public.notes where title = $1", [title])).rows[0].n).toBe(0);
+  expect((await db().query("select count(*)::int n from public.note_relation where from_note_id = $1 and to_note_id = $2", [a.id, b.id])).rows[0].n).toBe(0);
+});
+
+test("AS-081: /mcp は公開オリジンと異なる Origin のリクエストを 403 で拒否する", async () => {
+  const res = await fetch(`${BASE}/mcp`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json, text/event-stream", origin: "http://evil.example", authorization: `Bearer ${await tokenFor("sho")}` },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+  });
+  expect(res.status).toBe(403);
+});

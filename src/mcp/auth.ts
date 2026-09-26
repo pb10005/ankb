@@ -16,7 +16,7 @@ export async function verifyMcpToken(authorization: string | null): Promise<McpA
   const { url } = supabaseEnv();
   jwks ??= createRemoteJWKSet(new URL(`${url}/auth/v1/.well-known/jwks.json`));
   try {
-    const { payload } = await jwtVerify(m[1], jwks, { issuer: `${url}/auth/v1` });
+    const { payload } = await jwtVerify(m[1], jwks, { issuer: `${url}/auth/v1`, requiredClaims: ["exp", "sub", "client_id"] });
     const clientId = typeof payload.client_id === "string" ? payload.client_id : "";
     if (!payload.sub || !clientId || payload.role !== "authenticated") return null;
     return { token: m[1], userId: payload.sub, clientId, claims: payload };
@@ -25,12 +25,15 @@ export async function verifyMcpToken(authorization: string | null): Promise<McpA
   }
 }
 
-/** クライアントがアクセスしたオリジン（Host / X-Forwarded-* を優先。request.url は開発サーバで localhost に正規化される） */
+/**
+ * ankb の公開オリジン。本番は環境変数 ANKB_PUBLIC_ORIGIN で固定する（ヘッダで差し替えられないように）。
+ * 未設定（開発）では Host ヘッダを使う（request.url は開発サーバで localhost に正規化される）
+ */
 export function publicOrigin(request: Request): string {
+  const fixed = process.env.ANKB_PUBLIC_ORIGIN;
+  if (fixed) return fixed.replace(/\/$/, "");
   const u = new URL(request.url);
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? u.host;
-  const proto = request.headers.get("x-forwarded-proto") ?? u.protocol.replace(":", "");
-  return `${proto}://${host}`;
+  return `${u.protocol}//${request.headers.get("host") ?? u.host}`;
 }
 
 /** Protected Resource Metadata（RFC 9728）の URL。WWW-Authenticate で案内する */

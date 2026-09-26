@@ -1,7 +1,8 @@
-// @covers AC-060, AC-062, AC-063, AC-064, AC-066, AC-067, AC-068, AC-070, AC-119, AC-123, AC-124
+// @covers AC-060, AC-062, AC-063, AC-064, AC-066, AC-067, AC-068, AC-070, AC-119, AC-123, AC-124, AC-069, AC-127
 // @assumption AS-025
 // @assumption AS-026
 // @assumption AS-050
+// @assumption AS-081
 // サーバMCP のツール（指示書 §7.1）。外部エージェントはユーザー本人のトークン（RLS）で動き、
 // 検索・回答・ノート操作は Web UI と同じコア関数を通る（§1.3）。承認・公開範囲の変更・削除はツールとして提供しない。
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -110,79 +111,35 @@ async function noteView(client: SupabaseClient, id: string) {
   };
 }
 
-export function createAnkbMcpServer(client: SupabaseClient, deps: { synthesizer?: Synthesizer } = {}): McpServer {
-  const server = new McpServer({ name: "ankb", version: "0.1.0" });
-  const readOnly = { readOnlyHint: true } as const;
+type Handler = (args: Record<string, unknown>) => Promise<CallToolResult>;
 
-  server.registerTool(
-    "search_knowledge",
-    {
-      description: "ナレッジを検索し、今有効なノートのチャンク（hits）・置き換え済みの旧情報（superseded_context）・食い違い（conflicts）と、回答を組み立てるときの契約（synthesis_guidelines）を返す",
-      inputSchema: { query: z.string().min(1).max(500) },
-      outputSchema: SearchResultSchema.shape,
-      annotations: readOnly,
-    },
-    async ({ query }) => ok(await searchKnowledge(client, query)),
-  );
-
-  server.registerTool(
-    "ask",
-    {
-      description: "質問にサーバ側で回答を合成する。すべての主張に根拠ノートの引用が付き、旧情報・食い違いは区別して示す",
-      inputSchema: { question: z.string().min(1).max(500) },
-      outputSchema: AnswerSchema.shape,
-      annotations: readOnly,
-    },
-    async ({ question }) => {
+/**
+ * ツールの実装。サーバMCP と WebMCP（/api/webmcp/[tool]）の両方がこれを通る（§1.3 入口の一貫性）。
+ * 入力の検証は各入口のスキーマで行い、ここでは値の意味を検証する。
+ */
+export function toolHandlers(client: SupabaseClient, deps: { synthesizer?: Synthesizer } = {}): Record<(typeof TOOL_NAMES)[number], Handler> {
+  return {
+    search_knowledge: async ({ query }) => ok(await searchKnowledge(client, String(query))),
+    ask: async ({ question }) => {
       if (!(await consumeAskQuota(client))) return err("RATE_LIMITED", "質問の回数の上限に達しました。時間をおいてください");
       try {
-        return ok(await ask(client, question, deps.synthesizer ? { synthesizer: deps.synthesizer } : {}));
+        return ok(await ask(client, String(question), deps.synthesizer ? { synthesizer: deps.synthesizer } : {}));
       } catch (e) {
         if (e instanceof UpstreamError) return err("UPSTREAM_ERROR", "回答を作成できませんでした");
         throw e;
       }
     },
-  );
-
-  server.registerTool(
-    "get_note",
-    {
-      description: "ノートの本文とメタデータ（有効性の状態・更新の可能性・食い違い）を返す",
-      inputSchema: { note_id: z.string() },
-      outputSchema: NoteSchema.shape,
-      annotations: readOnly,
-    },
-    async ({ note_id }) => {
-      const v = await noteView(client, note_id);
+    get_note: async ({ note_id }) => {
+      const v = await noteView(client, String(note_id));
       return v ? ok(v) : err("NOT_FOUND", "ノートが見つかりません");
     },
-  );
-
-  server.registerTool(
-    "get_note_lineage",
-    {
-      description: "置き換えの連鎖を時系列（古い順）で返す。閲覧できないノートは含まない",
-      inputSchema: { note_id: z.string() },
-      outputSchema: LineageSchema.shape,
-      annotations: readOnly,
-    },
-    async ({ note_id }) => {
-      const v = await getNote(client, note_id);
+    get_note_lineage: async ({ note_id }) => {
+      const v = await getNote(client, String(note_id));
       if (!v?.ok) return err("NOT_FOUND", "ノートが見つかりません");
-      const lineage = await noteLineage(client, note_id);
+      const lineage = await noteLineage(client, String(note_id));
       return lineage ? ok({ lineage: lineage.map((l) => ({ ...l, superseded_by: l.superseded_by ?? null })) }) : err("NOT_FOUND", "ノートが見つかりません");
     },
-  );
-
-  server.registerTool(
-    "list_pending_relations",
-    {
-      description: "自分が承認・却下できる（両方のノートを編集できる）未承認の提案を返す。承認は人間が Web UI で行う",
-      inputSchema: {},
-      outputSchema: ProposalsSchema.shape,
-      annotations: readOnly,
-    },
-    async () => {
+    list_pending_relations: async () => {
       const rows = await pendingProposals(client);
       return ok({
         relations: rows.map((r) => ({
@@ -197,6 +154,111 @@ export function createAnkbMcpServer(client: SupabaseClient, deps: { synthesizer?
         })),
       });
     },
+    create_note: async ({ title, body, status, workspace_id, visibility }) => {
+      if (visibility !== undefined) return err("VALIDATION_ERROR", "create_note では公開範囲を指定できません（人間が Web UI で設定します）");
+      const workspaces = await listMyWorkspaces(client);
+      if (workspace_id === undefined && workspaces.length > 1) return err("VALIDATION_ERROR", "複数のワークスペースに所属しているため workspace_id を指定してください");
+      const ws = (workspace_id as string | undefined) ?? workspaces[0]?.id;
+      if (!ws || !workspaces.some((w) => w.id === ws)) return err("VALIDATION_ERROR", "workspace_id を確認してください");
+      const created = await createNote(client, { workspace_id: ws, title: String(title), body: String(body ?? "") });
+      if (!created.ok) return err(created.code, created.message);
+      if (status === "active") {
+        const up = await updateNote(client, created.value.id, { status: "active", expected_version: created.value.version });
+        if (!up.ok) return err(up.code, up.message);
+      }
+      return ok((await noteView(client, created.value.id))!);
+    },
+    update_note: async ({ note_id, expected_version, title, body, effective_from, status, visibility }) => {
+      if (visibility !== undefined) return err("VALIDATION_ERROR", "公開範囲は人間が Web UI で変更します");
+      if (status !== undefined && status !== "active") return err("VALIDATION_ERROR", "status は active（下書きの公開）だけを指定できます");
+      const id = String(note_id);
+      const patch: Record<string, unknown> = { expected_version };
+      if (title !== undefined) patch.title = title;
+      if (body !== undefined) patch.body = body;
+      if (effective_from !== undefined) patch.effective_from = effective_from;
+      if (status !== undefined) {
+        const cur = await getNote(client, id);
+        if (cur?.ok && cur.value.status !== "draft") return err("VALIDATION_ERROR", "status を active にできるのは下書きだけです");
+        patch.status = status;
+      }
+      const res = await updateNote(client, id, patch);
+      if (!res.ok) return err(res.code, res.message);
+      return ok((await noteView(client, id))!);
+    },
+    propose_relation: async ({ from_note_id, to_note_id, type, rationale }) => {
+      const [a, b] = await Promise.all([getNote(client, String(from_note_id)), getNote(client, String(to_note_id))]);
+      if (!a?.ok || !b?.ok) return err("NOT_FOUND", "ノートが見つかりません");
+      if (from_note_id === to_note_id) return err("VALIDATION_ERROR", "同じノートどうしは提案できません");
+      if (!["supersedes", "contradicts", "related"].includes(String(type))) return err("VALIDATION_ERROR", "type が不正です");
+      const text = String(rationale ?? "");
+      if (text.length < 1 || text.length > 2000) return err("VALIDATION_ERROR", "rationale は1〜2000文字で指定してください");
+      const id = crypto.randomUUID();
+      const { error } = await client
+        .from("note_relation")
+        .insert({ id, from_note_id, to_note_id, type, proposed_by: "agent", rationale: text } as Record<string, unknown>);
+      if (error) return err("VALIDATION_ERROR", "提案を作成できませんでした");
+      return ok({ id, state: "proposed", proposed_by: "agent" });
+    },
+  };
+}
+
+export function createAnkbMcpServer(client: SupabaseClient, deps: { synthesizer?: Synthesizer } = {}): McpServer {
+  const server = new McpServer({ name: "ankb", version: "0.1.0" });
+  const h = toolHandlers(client, deps);
+  const readOnly = { readOnlyHint: true } as const;
+
+  server.registerTool(
+    "search_knowledge",
+    {
+      description: "ナレッジを検索し、今有効なノートのチャンク（hits）・置き換え済みの旧情報（superseded_context）・食い違い（conflicts）と、回答を組み立てるときの契約（synthesis_guidelines）を返す",
+      inputSchema: { query: z.string().min(1).max(500) },
+      outputSchema: SearchResultSchema.shape,
+      annotations: readOnly,
+    },
+    async ({ query }) => h.search_knowledge({ query }),
+  );
+
+  server.registerTool(
+    "ask",
+    {
+      description: "質問にサーバ側で回答を合成する。すべての主張に根拠ノートの引用が付き、旧情報・食い違いは区別して示す",
+      inputSchema: { question: z.string().min(1).max(500) },
+      outputSchema: AnswerSchema.shape,
+    },
+    async ({ question }) => h.ask({ question }),
+  );
+
+  server.registerTool(
+    "get_note",
+    {
+      description: "ノートの本文とメタデータ（有効性の状態・更新の可能性・食い違い）を返す",
+      inputSchema: { note_id: z.string() },
+      outputSchema: NoteSchema.shape,
+      annotations: readOnly,
+    },
+    async ({ note_id }) => h.get_note({ note_id }),
+  );
+
+  server.registerTool(
+    "get_note_lineage",
+    {
+      description: "置き換えの連鎖を時系列（古い順）で返す。閲覧できないノートは含まない",
+      inputSchema: { note_id: z.string() },
+      outputSchema: LineageSchema.shape,
+      annotations: readOnly,
+    },
+    async ({ note_id }) => h.get_note_lineage({ note_id }),
+  );
+
+  server.registerTool(
+    "list_pending_relations",
+    {
+      description: "自分が承認・却下できる（両方のノートを編集できる）未承認の提案を返す。承認は人間が Web UI で行う",
+      inputSchema: {},
+      outputSchema: ProposalsSchema.shape,
+      annotations: readOnly,
+    },
+    async () => h.list_pending_relations({}),
   );
 
   server.registerTool(
@@ -213,19 +275,7 @@ export function createAnkbMcpServer(client: SupabaseClient, deps: { synthesizer?
       },
       outputSchema: NoteSchema.shape,
     },
-    async ({ title, body, status, workspace_id, visibility }) => {
-      if (visibility !== undefined) return err("VALIDATION_ERROR", "create_note では公開範囲を指定できません（人間が Web UI で設定します）");
-      const workspaces = await listMyWorkspaces(client);
-      const ws = workspace_id ?? workspaces[0]?.id;
-      if (!ws || !workspaces.some((w) => w.id === ws)) return err("VALIDATION_ERROR", "workspace_id を確認してください");
-      const created = await createNote(client, { workspace_id: ws, title, body });
-      if (!created.ok) return err(created.code, created.message);
-      if (status === "active") {
-        const up = await updateNote(client, created.value.id, { status: "active", expected_version: created.value.version });
-        if (!up.ok) return err(up.code, up.message);
-      }
-      return ok((await noteView(client, created.value.id))!);
-    },
+    async (args) => h.create_note(args),
   );
 
   server.registerTool(
@@ -243,22 +293,7 @@ export function createAnkbMcpServer(client: SupabaseClient, deps: { synthesizer?
       },
       outputSchema: NoteSchema.shape,
     },
-    async ({ note_id, expected_version, title, body, effective_from, status, visibility }) => {
-      if (visibility !== undefined) return err("VALIDATION_ERROR", "公開範囲は人間が Web UI で変更します");
-      if (status !== undefined && status !== "active") return err("VALIDATION_ERROR", "status は active（下書きの公開）だけを指定できます");
-      const patch: Record<string, unknown> = { expected_version };
-      if (title !== undefined) patch.title = title;
-      if (body !== undefined) patch.body = body;
-      if (effective_from !== undefined) patch.effective_from = effective_from;
-      if (status !== undefined) {
-        const cur = await getNote(client, note_id);
-        if (cur?.ok && cur.value.status !== "draft") return err("VALIDATION_ERROR", "status を active にできるのは下書きだけです");
-        patch.status = status;
-      }
-      const res = await updateNote(client, note_id, patch);
-      if (!res.ok) return err(res.code, res.message);
-      return ok((await noteView(client, note_id))!);
-    },
+    async (args) => h.update_note(args),
   );
 
   server.registerTool(
@@ -273,17 +308,7 @@ export function createAnkbMcpServer(client: SupabaseClient, deps: { synthesizer?
       },
       outputSchema: RelationSchema.shape,
     },
-    async ({ from_note_id, to_note_id, type, rationale }) => {
-      const [a, b] = await Promise.all([getNote(client, from_note_id), getNote(client, to_note_id)]);
-      if (!a?.ok || !b?.ok) return err("NOT_FOUND", "ノートが見つかりません");
-      if (from_note_id === to_note_id) return err("VALIDATION_ERROR", "同じノートどうしは提案できません");
-      const id = crypto.randomUUID();
-      const { error } = await client
-        .from("note_relation")
-        .insert({ id, from_note_id, to_note_id, type, proposed_by: "agent", rationale } as Record<string, unknown>);
-      if (error) return err("VALIDATION_ERROR", "提案を作成できませんでした");
-      return ok({ id, state: "proposed", proposed_by: "agent" });
-    },
+    async (args) => h.propose_relation(args),
   );
 
   return server;

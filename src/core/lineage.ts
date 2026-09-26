@@ -13,6 +13,7 @@ export async function noteLineage(client: SupabaseClient, noteId: string): Promi
 }
 
 export async function noteRelationsSummary(client: SupabaseClient, noteId: string): Promise<{ possibly_outdated: boolean; conflicts: Conflict[] }> {
+  if (!/^[0-9a-f-]{36}$/i.test(noteId)) return { possibly_outdated: false, conflicts: [] };
   // note_relation は RLS により両端を閲覧できる関係だけが返る
   const { data } = await client
     .from("note_relation")

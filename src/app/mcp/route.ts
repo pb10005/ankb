@@ -6,11 +6,13 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { createClient } from "@supabase/supabase-js";
 import { createAnkbMcpServer } from "@/mcp/server";
 import { bindClientUser } from "@/core/notes";
-import { unauthorized, verifyMcpToken } from "@/mcp/auth";
+import { publicOrigin, unauthorized, verifyMcpToken } from "@/mcp/auth";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { testSynthesizer } from "@/core/test-synthesizers";
 
 async function handle(request: Request): Promise<Response> {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== publicOrigin(request)) return new Response(JSON.stringify({ code: "FORBIDDEN", message: "許可されていないオリジンです" }), { status: 403 });
   const auth = await verifyMcpToken(request.headers.get("authorization"));
   if (!auth) return unauthorized(request);
   const { url, anonKey } = supabaseEnv();
