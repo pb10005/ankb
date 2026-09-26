@@ -8,9 +8,7 @@ id: FEAT-006
 title: "置き換え関係の推定と承認: AIが推定し人がワンクリックで承認する"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "どれが今有効かの判定を人手の整理に頼ると更新されない。ノートを有効にした時点でAIが置き換え・矛盾の候補を推定して提案し、両方のノートの編集\
-  権限を持つ人間がワンクリックで承認・却下できるようにする。承認だけが superseded
-  への唯一の経路であり、エージェントは提案まではできても承認はできない。"
+intent: "どれが今有効かの判定を人手の整理に頼ると更新されない。ノートを有効にした時点でAIが置き換え・矛盾の候補を推定して提案し、両方のノートの編集権限を持つ人間がワンクリックで承認・却下できるようにする。承認だけが superseded への唯一の経路であり、エージェントは提案まではできても承認はできない。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -24,16 +22,12 @@ out_of_scope:
 
 assumptions:
   - id: AS-020
-    statement: "バックグラウンドジョブは Supabase Queues（pgmq）を使う。ノートの active 化・active
-      ノートの更新のトリガーでジョブを投入し、pg_net で Next.js の内部ワーカーエンドポイントを即時に呼ぶ。取りこぼしは pg_cron
-      が毎分ワーカーを呼んで回収する。Edge Functions（Deno）を使わないのは、検索・判定のコアロジックを Next.js 側の
-      TypeScript と共有するため（指示書 §3 の選定報告）"
+    statement: "バックグラウンドジョブは Supabase Queues（pgmq）を使う。ノートの active 化・active ノートの本文更新のトリガーでジョブを投入する。即時の処理は AS-076 の after() が担い、取りこぼしは pg_cron が毎分ワーカーを呼んで回収する。Edge Functions（Deno）を使わないのは、検索・判定のコアロジックを Next.js 側の TypeScript と共有するため（指示書 §3 の選定報告）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-021
-    statement: "候補数 N=5、確信度しきい値 0.7 は環境変数 ANKB_RELATION_TOP_N /
-      ANKB_RELATION_THRESHOLD で変更できる初期値とする（指示書 §12: 運用で調整）"
+    statement: "候補数 N=5、確信度しきい値 0.7 は環境変数 ANKB_RELATION_TOP_N / ANKB_RELATION_THRESHOLD で変更できる初期値とする（指示書 §12: 運用で調整）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -43,42 +37,37 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-043
-    statement: "同じノートの組（向き・type を問わない）に proposed / confirmed / rejected のいずれかの
-      note_relation がある場合、推定ジョブは新しい提案を作らない（AS-022 を置き換える）"
+    statement: "同じノートの組（向き・type を問わない）に proposed / confirmed / rejected のいずれかの note_relation がある場合、推定ジョブは新しい提案を作らない（AS-022 を置き換える）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-044
-    statement: "LLM が『既存ノートがトリガー元ノートを置き換える』と判定した場合は from=既存ノート
-      として保存し、バナー文言は『このノートは「X」に置き換えられていますか？』とする"
+    statement: "LLM が『既存ノートがトリガー元ノートを置き換える』と判定した場合は from=既存ノート として保存し、バナー文言は『このノートは「X」に置き換えられていますか？』とする"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-074
-    statement: "推定ジョブの試行は初回＋再試行3回の最大4回とする。LLM の失敗でメッセージを処理できなかった場合は即座に再試行し、4回目も失敗したら
-      jobs.relation_job_failure に記録してキューから外す（アーカイブ）。ノートの保存はジョブの成否に関係なく成功する"
+    statement: "推定ジョブの試行は初回＋再試行3回の最大4回とする。LLM の失敗でメッセージを処理できなかった場合は即座に再試行し、4回目も失敗したら jobs.relation_job_failure に記録してキューから外す（アーカイブ）。ノートの保存はジョブの成否に関係なく成功する"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-10"
   - id: AS-075
-    statement: "『後で』は提案を proposed
-      のまま残し、そのブラウザのセッション中だけノート画面のバナーを隠す（sessionStorage）。インボックスとヘッダーの件数には引き続き表示す\
-      る"
+    statement: "『後で』は提案を proposed のまま残し、そのブラウザのセッション中だけノート画面のバナーを隠す（sessionStorage）。インボックスとヘッダーの件数には引き続き表示する"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-10"
   - id: AS-076
-    statement: "ノートの公開・保存の直後に、応答を返した後（Next.js の after）で推定キューを処理する。pg_cron
-      による毎分の回収は、デプロイ時に jobs.configure_worker(ワーカーURL, 共有秘密) を実行して有効にする（共有秘密は環境変数
-      ANKB_WORKER_SECRET）。ジョブは RLS を通らない DB 直結の接続（DATABASE_URL、src/jobs/
-      配下のみ）で動く"
+    statement: "ノートの公開・保存の直後に、応答を返した後（Next.js の after）で推定キューを処理する。pg_cron による毎分の回収は、デプロイ時に jobs.configure_worker(ワーカーURL, 共有秘密) を実行して有効にする（共有秘密は環境変数 ANKB_WORKER_SECRET）。ジョブは DATABASE_URL の DB 接続で service_role に切り替えて動き（§5.3）、コードは src/jobs/ 配下に置く。判定モデルは環境変数 ANKB_RELATION_MODEL（既定 claude-opus-5、effort=low、fallbacks default）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-10"
   - id: AS-077
-    statement: "E2E テストでは ANKB_TEST_MODE=1（かつ開発サーバか
-      CI）のとき、タイトルの規則で判定する決定的な判定器を使う。タイトル末尾の識別子が同じ組について、『新・』と相手の『旧・』→ supersedes
-      0.9、両方に『矛盾』→ contradicts 0.8、それ以外は none"
+    statement: "E2E テストでは ANKB_TEST_MODE=1（かつ開発サーバか CI）のとき、タイトルの規則で判定する決定的な判定器を使う。タイトル末尾の識別子が同じ組について、『新・』と相手の『旧・』→ supersedes 0.9、両方に『矛盾』→ contradicts 0.8、それ以外は none"
+    status: assumed
+    owner: pb10005
+    resolve_by: "2026-10-10"
+  - id: AS-079
+    statement: "ヘッダーの件数とインボックスは、自分が承認・却下できる（両方のノートを編集できる）未承認の提案だけを数える。インボックスの一括処理は既定で未選択とし、人間が選んだ提案だけを承認・却下する。related の提案はバナーで『このノートは「X」と関連していますか？』と尋ねる"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-10"
@@ -96,8 +85,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: UIの公開ボタン経由で active 化し、TitleRuleJudge(スタブ)で60秒以内に提案リージョン内に指定文言バナーを確認。E2E
-      10/10 pass
+    note: UIの公開ボタン経由で active 化し、TitleRuleJudge(スタブ)で60秒以内に提案リージョン内に指定文言バナーを確認。E2E 10/10 pass
     evidence: e2e/relations.spec.ts:42
 
   - id: AC-050
@@ -110,8 +98,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: 『はい』で旧ノート status=superseded(DB)、searchKnowledge で hits から除外かつ
-      superseded_context に superseded_by=新ノートで返ることを検証
+    note: 『はい』で旧ノート status=superseded(DB)、searchKnowledge で hits から除外かつ superseded_context に superseded_by=新ノートで返ることを検証
     evidence: e2e/relations.spec.ts:57
 
   - id: AC-051
@@ -124,8 +111,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "DB: reject後に再保存→再推定しても組は rejected の1件のみ。E2E e2e/relations.spec.ts:73
-      でUIの『いいえ』→rejected、編集画面で再保存しキュー消化後も [{state:rejected}] を検証"
+    note: "DB: reject後に再保存→再推定しても組は rejected の1件のみ。E2E e2e/relations.spec.ts:73 でUIの『いいえ』→rejected、編集画面で再保存しキュー消化後も [{state:rejected}] を検証"
     evidence: tests/db/relation-inference.test.ts:120
 
   - id: AC-052
@@ -151,9 +137,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "E2E: 件数=一覧件数、非公開ノートのタイトル・idがHTMLに無い。DB
-      tests/db/relation-inference.test.ts:139 で件数と一覧の元である pending_relations
-      が非公開側を返さないことを検証"
+    note: "E2E: 件数=一覧件数、非公開ノートのタイトル・idがHTMLに無い。DB tests/db/relation-inference.test.ts:139 で件数と一覧の元である pending_relations が非公開側を返さないことを検証"
     evidence: e2e/relations.spec.ts:109
 
   - id: AC-055
@@ -218,9 +202,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: 5xxを返し続ける judge で呼び出し4回(初回+再試行3)、failed=1、relation_job_failure
-      attempts=4、関係0件、ノート active、キュー空を検証。保存経路は after() 内で
-      try/catch(src/jobs/kick.ts:9)
+    note: 5xxを返し続ける judge で呼び出し4回(初回+再試行3)、failed=1、relation_job_failure attempts=4、関係0件、ノート active、キュー空を検証。保存経路は after() 内で try/catch(src/jobs/kick.ts:9)
     evidence: tests/db/relation-inference.test.ts:77
 
   - id: AC-054
@@ -246,8 +228,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: バナー0件、SSR応答+DOM と pending_relations RPC/note_relation select 応答に P の
-      id・タイトル・rationale が無いことを検証
+    note: バナー0件、SSR応答+DOM と pending_relations RPC/note_relation select 応答に P の id・タイトル・rationale が無いことを検証
     evidence: e2e/relations.spec.ts:192
 
   - id: AC-114
@@ -267,13 +248,11 @@ acceptance:
     kind: functional
     given: "スタブが contradicts（確信度0.8）を返す"
     when: "ノートを active にし、バナーで『はい』を押す"
-    then: "『このノートは「X」と内容が食い違っています』を表示し、承認後は state=confirmed で両ノートの status は active
-      のまま変わらない"
+    then: "『このノートは「X」と内容が食い違っています』を表示し、承認後は state=confirmed で両ノートの status は active のまま変わらない"
     priority: must
     verify: test
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: スタブの contradicts 0.8 で『内容が食い違っています』バナー表示、『はい』後
-      state=confirmed/type=contradicts、両ノート active を検証
+    note: スタブの contradicts 0.8 で『内容が食い違っています』バナー表示、『はい』後 state=confirmed/type=contradicts、両ノート active を検証
     evidence: e2e/relations.spec.ts:210

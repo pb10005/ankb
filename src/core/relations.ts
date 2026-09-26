@@ -41,6 +41,7 @@ export function bannerMessage(p: Proposal, viewingNoteId: string, otherTitle: st
 
 /** ノート画面のバナー用。閲覧できない相手との提案は RLS により現れない（AC-112） */
 export async function proposalsForNote(client: SupabaseClient, noteId: string): Promise<ProposalView[]> {
+  if (!/^[0-9a-f-]{36}$/i.test(noteId)) return [];
   const { data } = await client
     .from("note_relation")
     .select(COLS)

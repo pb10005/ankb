@@ -3,6 +3,7 @@
 // @assumption AS-077
 // 候補ノートの組を LLM で判定する（指示書 §6.2 推定 3）。supersedes / contradicts / related / none と確信度・理由を返す。
 import Anthropic from "@anthropic-ai/sdk";
+import { isCi } from "../core/test-synthesizers";
 
 export type NoteText = { id: string; title: string; body: string; effective_from: string | null; updated_at: string };
 export type Judgement = {
@@ -65,7 +66,7 @@ export class ClaudeJudge implements Judge {
 }
 
 /**
- * E2E 用の決定的な判定（ANKB_TEST_MODE=1 かつ開発サーバか CI のときだけ: AS-072）。
+ * E2E 用の決定的な判定（ANKB_TEST_MODE=1 かつ開発サーバか CI のときだけ: AS-077）。
  * タイトル末尾の識別子（最後の空白以降）が同じ組のうち、「新・」と「旧・」→ supersedes、両方に「矛盾」→ contradicts、それ以外は none
  */
 export class TitleRuleJudge implements Judge {
@@ -85,6 +86,6 @@ export class TitleRuleJudge implements Judge {
 }
 
 export function defaultJudge(): Judge {
-  const testMode = process.env.ANKB_TEST_MODE === "1" && (process.env.NODE_ENV !== "production" || !!process.env.CI);
+  const testMode = process.env.ANKB_TEST_MODE === "1" && (process.env.NODE_ENV !== "production" || isCi());
   return testMode ? new TitleRuleJudge() : new ClaudeJudge();
 }

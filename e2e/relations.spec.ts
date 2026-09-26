@@ -139,6 +139,7 @@ test("AC-056: 未処理の提案3件をインボックスで一括『いいえ�
   await page.goto("/inbox");
   await expect(page.getByTestId("pending-count")).toHaveText("3");
   await expect(page.getByRole("list", { name: "未処理の提案" }).getByRole("listitem")).toHaveCount(3);
+  for (const box of await page.getByRole("list", { name: "未処理の提案" }).getByRole("checkbox").all()) await box.check();
   await page.getByRole("button", { name: "選択した提案を却下（いいえ）" }).click();
   await expect(page.getByText("未処理の提案はありません。")).toBeVisible();
   await expect(page.getByTestId("pending-count")).toHaveText("0");

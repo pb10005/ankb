@@ -1,4 +1,5 @@
 // @covers AC-053, AC-056, AC-058
+// @assumption AS-079
 import Link from "next/link";
 import { pendingProposals } from "@/core/relations";
 import { requireUser } from "@/lib/session";
@@ -20,7 +21,7 @@ export default async function InboxPage() {
             {pending.map((p) => (
               <li key={p.id}>
                 <label>
-                  <input type="checkbox" name="relation_id" value={p.id} defaultChecked />
+                  <input type="checkbox" name="relation_id" value={p.id} aria-label={`「${p.from_title}」→「${p.to_title}」を選択`} />
                   <span className="badge">{TYPE_LABEL[p.type]}</span>「{p.from_title}」→「{p.to_title}」
                 </label>
                 {p.rationale && <p className="proposal-rationale">理由: {p.rationale}</p>}

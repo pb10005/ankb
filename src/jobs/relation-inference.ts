@@ -20,8 +20,6 @@ export type InferenceOptions = {
   judge?: Judge;
   topN?: number;
   threshold?: number;
-  /** 初回 + 再試行3回（AS-074） */
-  maxAttempts?: number;
   /** 1回の呼び出しで処理する最大メッセージ数 */
   batch?: number;
 };
@@ -36,7 +34,7 @@ export async function drainRelationQueue(opts: InferenceOptions = {}): Promise<{
   const judge = opts.judge ?? defaultJudge();
   const topN = opts.topN ?? envNumber("ANKB_RELATION_TOP_N", 5);
   const threshold = opts.threshold ?? envNumber("ANKB_RELATION_THRESHOLD", 0.7);
-  const maxAttempts = opts.maxAttempts ?? 4;
+  const maxAttempts = 4; // 初回 + 再試行3回（AS-074）
   const batch = opts.batch ?? 20;
   let processed = 0;
   let failed = 0;
