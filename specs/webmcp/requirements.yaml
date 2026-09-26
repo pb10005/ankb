@@ -8,7 +8,9 @@ id: FEAT-008
 title: "WebMCP: ブラウザ内エージェントが画面の文脈を共有してUIを操作する"
 status: frozen # draft -> (spec-lint --gate freeze) -> frozen
 
-intent: "美咲がノートを開いたまま『これって最新？』と聞けるように、ankb のWebページ自身が document.modelContext（WebMCP）にツールを登録し、ブラウザ内エージェントが画面の文脈（開いているノート・検索クエリ・選択範囲）を取得し、ノートや比較ビューを開き、引用をハイライトできるようにする。確定操作（承認・保存）は必ず人間のクリックを経由する。"
+intent: "美咲がノートを開いたまま『これって最新？』と聞けるように、ankb のWebページ自身が
+  document.modelContext（WebMCP）にツールを登録し、ブラウザ内エージェントが画面の文脈（開いているノート・検索クエリ・選択範囲）を\
+  取得し、ノートや比較ビューを開き、引用をハイライトできるようにする。確定操作（承認・保存）は必ず人間のクリックを経由する。"
 
 out_of_scope:
   - "リアルタイム共同編集（指示書 §11）"
@@ -22,22 +24,36 @@ out_of_scope:
 
 assumptions:
   - id: AS-031
-    statement: "WebMCP は 2026-09-25 時点の仕様ドラフト（webmachinelearning/webmcp の index.bs、CG-DRAFT）に合わせる。エントリポイントは document.modelContext（SecureContext 必須）、登録は registerTool(tool, {signal})、解除は signal の abort、execute(input, {signal}) の戻り値は JSON シリアライズ可能なオブジェクト。読み取り系と画面操作のツールには annotations.readOnlyHint=true、request_relation_approval と draft_note には consequentialHint=true を付ける。document.modelContext が無い場合は何も登録しない"
+    statement: "WebMCP は 2026-09-25 時点の仕様ドラフト（webmachinelearning/webmcp の
+      index.bs、CG-DRAFT）に合わせる。エントリポイントは document.modelContext（SecureContext
+      必須）、登録は registerTool(tool, {signal})、解除は signal の abort、execute(input,
+      {signal}) の戻り値は JSON シリアライズ可能なオブジェクト。読み取り系と画面操作のツールには
+      annotations.readOnlyHint=true、request_relation_approval と draft_note には
+      consequentialHint=true を付ける。document.modelContext が無い場合は何も登録しない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-028
-    statement: "WebMCP の読み取り系ツールは、ブラウザのログインセッションで Web UI と同じ Next.js API（searchKnowledge を呼ぶもの）を呼ぶ。ブラウザからサービスロールキーやサーバMCPのOAuthトークンは使わない"
+    statement: "WebMCP の読み取り系ツールは、ブラウザのログインセッションで Web UI と同じ Next.js
+      API（searchKnowledge を呼ぶもの）を呼ぶ。ブラウザからサービスロールキーやサーバMCPのOAuthトークンは使わない"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-030
-    statement: "E2E テストでは Playwright の addInitScript で document.modelContext のスタブ（registerTool(tool, {signal}) / getTools()）を注入し、登録・解除と execute の結果を検証する。加えて Chrome のフラグ enable-webmcp-testing を有効にした実ブラウザでのスモークテストを手動で1回行う"
+    statement: "E2E テストでは Playwright の addInitScript で document.modelContext
+      のスタブ（registerTool(tool, {signal}) / getTools()）を注入し、登録・解除と execute
+      の結果を検証する。加えて Chrome のフラグ enable-webmcp-testing
+      を有効にした実ブラウザでのスモークテストを手動で1回行う"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-027
-    statement: "WebMCP で登録するツールは、サーバMCPの読み取り系5件（search_knowledge / ask / get_note / get_note_lineage / list_pending_relations）、画面操作5件（get_current_context / open_note / open_compare_view / highlight_citation / draft_note）、request_relation_approval、propose_relation の計12件とする。propose_relation は §7.2 の表には無いが §6.2（WebMCP のエージェントも提案できる）に従って登録する"
+    statement: "WebMCP で登録するツールは、サーバMCPの読み取り系5件（search_knowledge / ask / get_note /
+      get_note_lineage / list_pending_relations）、画面操作5件（get_current_context /
+      open_note / open_compare_view / highlight_citation /
+      draft_note）、request_relation_approval、propose_relation
+      の計12件とする。propose_relation は §7.2 の表には無いが §6.2（WebMCP
+      のエージェントも提案できる）に従って登録する"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
@@ -47,12 +63,14 @@ assumptions:
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-056
-    statement: "WebMCP 非対応ブラウザ向けの代替手段は用意しない。非対応ブラウザでは人間向けUI（質問欄の ask を含む）だけが動く（指示書 §12 の未決を既定値で仮決め）"
+    statement: "WebMCP 非対応ブラウザ向けの代替手段は用意しない。非対応ブラウザでは人間向けUI（質問欄の ask を含む）だけが動く（指示書
+      §12 の未決を既定値で仮決め）"
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-09"
   - id: AS-083
-    statement: draft_note の下書きは /notes/new の編集画面にだけ引き継ぐ。保存するか、/notes/new から別の画面へ移った時点で捨て、後で自分で /notes/new を開いても前の下書きは出さない
+    statement: draft_note の下書きは /notes/new の編集画面にだけ引き継ぐ。保存するか、/notes/new
+      から別の画面へ移った時点で捨て、後で自分で /notes/new を開いても前の下書きは出さない
     status: assumed
     owner: pb10005
     resolve_by: "2026-10-10"
@@ -60,10 +78,18 @@ assumptions:
 open_questions:
   - id: OQ-001
     from: AC-127
-    question: "AC-127 は実装側で判定不能: 要件側の矛盾: then は12ツール全部に『存在しないidと同じNOT_FOUND』『画面は遷移しない』を求めるが、search_knowledge/ask/list_pending_relations/get_current_context/draft_note はノートidを引数に取らずNOT_FOUNDを返しようがなく、draft_note はAC-082により/notes/newへ遷移するのが仕様。テストは228行でdraft_note後にpage.goto(url)で戻してから『遷移しない』を判定している。idを取る5ツール(get_note/lineage/open_note/open_compare_view/propose_relation)+request_relation_approvalのNOT_FOUNDと3ユーザーでの非漏洩(230-239)は検証済みで通過。ACを『idを取るツールは〜、それ以外は不可視情報を含まない』等に/reconcileで直す必要"
+    question: "AC-127 は実装側で判定不能: 要件側の矛盾: then
+      は12ツール全部に『存在しないidと同じNOT_FOUND』『画面は遷移しない』を求めるが、search_knowledge/ask/list_p\
+      ending_relations/get_current_context/draft_note
+      はノートidを引数に取らずNOT_FOUNDを返しようがなく、draft_note
+      はAC-082により/notes/newへ遷移するのが仕様。テストは228行でdraft_note後にpage.goto(url)で戻してから『遷\
+      移しない』を判定している。idを取る5ツール(get_note/lineage/open_note/open_compare_view/propo\
+      se_relation)+request_relation_approvalのNOT_FOUNDと3ユーザーでの非漏洩(230-239)は検証済み\
+      で通過。ACを『idを取るツールは〜、それ以外は不可視情報を含まない』等に/reconcileで直す必要"
     raised: 2026-09-26
     status: resolved
-    resolution: 2026-09-26 人間の承認により AC-127 をツールで分けて書き直した（id を取る5ツールは NOT_FOUND かつ遷移しない、12ツールすべてで不可視情報を含まない）
+    resolution: 2026-09-26 人間の承認により AC-127 をツールで分けて書き直した（id を取る5ツールは NOT_FOUND
+      かつ遷移しない、12ツールすべてで不可視情報を含まない）
 
 acceptance:
   - id: AC-072
@@ -76,7 +102,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "stub注入済み未ログインで/login表示・1s待機後 registerTool 呼び出し0回(17)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "stub注入済み未ログインで/login表示・1s待機後 registerTool 呼び出し0回(17)。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:12
 
   - id: AC-073
@@ -89,20 +116,26 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "registerToolに渡したnameの集合とgetTools()がAS-027の12件と一致(24-25)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "registerToolに渡したnameの集合とgetTools()がAS-027の12件と一致(24-25)。npx playwright
+      test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed
+      (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:21
 
   - id: AC-074
     kind: functional
     given: "ログイン済みで WebMCP のツールを登録済み"
     when: "ログアウトする"
-    then: "以後の getTools() は ankb のツールを1件も含まない配列を返す（registerTool に渡した AbortSignal を abort して解除）"
+    then: "以後の getTools() は ankb のツールを1件も含まない配列を返す（registerTool に渡した AbortSignal を
+      abort して解除）"
     priority: must
     verify: test
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ログアウト後getTools()==[](33-34)。stubはsignal abort時のみ削除し、追加プローブでログアウトがソフト遷移(windowマーカー保持)であることを確認済み=abortによる解除。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "ログアウト後getTools()==[](33-34)。stubはsignal
+      abort時のみ削除し、追加プローブでログアウトがソフト遷移(windowマーカー保持)であることを確認済み=abortによる解除。npx
+      playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed
+      (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:29
 
   - id: AC-075
@@ -115,8 +148,10 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "note_id=N と選択文字列の両方をアサート(45-46)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:38
+    note: "ノートNを開き本文を選択後 get_current_context の note_id=N(46) かつ
+      selection=選択文字列(47)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts e2e/search.spec.ts: 22 passed (2026-09-26)"
+    evidence: e2e/webmcp.spec.ts:46
 
   - id: AC-076
     kind: functional
@@ -128,8 +163,11 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "ノート表示でnote_id=Nを確認後、検索で note_id 非含有かつ query=宿泊費(62-63)。テストはpage.gotoで遷移するが、追加プローブでクライアント側遷移でも note_id が残らないことを確認。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:50
+    note: "ノート表示で note_id=N を確認(56)後、検索画面で宿泊費を検索し note_id 非含有(63) かつ
+      query=宿泊費(64)。遷移は page.goto だが、page-context.tsx:12
+      がアンマウント時に文脈を消すのでクライアント側遷移でも同じ。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts e2e/search.spec.ts: 22 passed (2026-09-26)"
+    evidence: e2e/webmcp.spec.ts:63
 
   - id: AC-077
     kind: functional
@@ -141,7 +179,9 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "travel-oldを開きget_current_contextのnote_idでlineageを呼び、[old,new]の順かつ日付昇順(73-76)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "travel-oldを開きget_current_contextのnote_idでlineageを呼び、[old,new]の順かつ日付昇順(73\
+      -76)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts:
+      20 passed (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:67
 
   - id: AC-078
@@ -154,7 +194,8 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "比較ビューの左右regionにAとBの見出しが表示(87-88)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "比較ビューの左右regionにAとBの見出しが表示(87-88)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:80
 
   - id: AC-082
@@ -167,8 +208,10 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "エディタのタイトル/本文がtitle/body(99-100)かつnotes件数不変(101)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
-    evidence: e2e/webmcp.spec.ts:92
+    note: "draft_note 後 /notes/new のエディタでタイトル=title(100)・本文=body(101) かつ notes
+      件数が実行前と同じ(102)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts e2e/search.spec.ts: 22 passed (2026-09-26)"
+    evidence: e2e/webmcp.spec.ts:100
 
   - id: AC-083
     kind: functional
@@ -180,7 +223,12 @@ acceptance:
     status: pass
     attempts: 1
     verified_at: 2026-09-26
-    note: npx playwright test e2e/webmcp.spec.ts -g AC-083 で1 passed。highlight_citation([1]) の戻り値、根拠パネルの data-highlighted=true、見出しが [1] で始まることを検証(:114-118)。[2] に切り替えると見出しが [2] になり pre の本文が変わることも検証(:122-124)ので、[1]固定表示や全引用に共通する語だけの一致では通らない。見出しと pre は同じ citation オブジェクトから描画される(src/app/ask/ask-view.tsx:79-82)ので、見出し[1]なら本文も[1]のチャンク
+    note: npx playwright test e2e/webmcp.spec.ts -g AC-083 で1
+      passed。highlight_citation([1]) の戻り値、根拠パネルの data-highlighted=true、見出しが [1]
+      で始まることを検証(:114-118)。[2] に切り替えると見出しが [2] になり pre
+      の本文が変わることも検証(:122-124)ので、[1]固定表示や全引用に共通する語だけの一致では通らない。見出しと pre は同じ
+      citation
+      オブジェクトから描画される(src/app/ask/ask-view.tsx:79-82)ので、見出し[1]なら本文も[1]のチャンク
     evidence: e2e/webmcp.spec.ts:118
 
   - id: AC-084
@@ -193,18 +241,30 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "open_noteでh1がXSS文字列そのもの(126)かつwindow.__xssがundefined(127)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "open_noteでh1がXSS文字列そのもの(126)かつwindow.__xssがundefined(127)。npx playwright
+      test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed
+      (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:120
 
   - id: AC-127
     kind: functional
     given: "権限シナリオの各ユーザーでログインした画面"
     when: "12ツールを、そのユーザーが閲覧できないノートの id（id を取らないツールは通常の引数）で execute する"
-    then: "id を取る5ツール（get_note / get_note_lineage / open_note / open_compare_view / propose_relation）は存在しない id と同じ {code:'NOT_FOUND'} を返して画面は遷移せず、12ツールのどの結果にも不可視ノートの id・title・本文断片・件数を含まない"
+    then: "id を取る5ツール（get_note / get_note_lineage / open_note / open_compare_view /
+      propose_relation）は存在しない id と同じ {code:'NOT_FOUND'}
+      を返して画面は遷移せず、12ツールのどの結果にも不可視ノートの id・title・本文断片・件数を含まない"
     priority: must
     verify: test
-    status: pending
-    attempts: 0
+    status: fail
+    attempts: 1
+    verified_at: 2026-09-26
+    note: "then の『件数を含まない』が未検証。244-249 は不可視ノートの
+      id・title・本文断片(合言葉/金額)の非含有しか見ておらず、search_knowledge/ask/list_pending_relati\
+      ons の件数(例: hits や pending の数が可視分だけか、不可視ノート間に作った提案 rel が
+      list_pending_relations に数えられないか)を一切アサートしていない。他の要素は検証済み: 5ツールの
+      NOT_FOUND(241)、存在しない id とのコード一致(242、message は比較していない)、遷移なし(231)。22 passed
+      でもテストが弱いので fail"
+    evidence: e2e/webmcp.spec.ts:244
 
   - id: AC-128
     kind: functional
@@ -216,7 +276,9 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "dashboard→一覧→ノート→dashboard→検索→dashboardのLink遷移後、12件の名前が各1回(159)かつregisterTool例外0件(160)。プローブでこれらの遷移がソフト遷移であることを確認。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "dashboard→一覧→ノート→dashboard→検索→dashboardのLink遷移後、12件の名前が各1回(159)かつregiste\
+      rTool例外0件(160)。プローブでこれらの遷移がソフト遷移であることを確認。npx playwright test
+      e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:147
 
   - id: AC-129
@@ -229,7 +291,9 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "タブBログアウト後、タブAで取得済みexecuteがUNAUTHENTICATEDのみを返し(176)、タブAのツール0件(177)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "タブBログアウト後、タブAで取得済みexecuteがUNAUTHENTICATEDのみを返し(176)、タブAのツール0件(177)。npx
+      playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed
+      (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:164
 
   - id: AC-134
@@ -242,5 +306,7 @@ acceptance:
     status: pass
     attempts: 0
     verified_at: 2026-09-26
-    note: "open_note/draft_noteがUNSAVED_CHANGES(139-140)、URLは/notes/newのまま(142)かつタイトル入力が書きかけのまま(143)。npx playwright test e2e/webmcp.spec.ts e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
+    note: "open_note/draft_noteがUNSAVED_CHANGES(139-140)、URLは/notes/newのまま(142)かつタイ\
+      トル入力が書きかけのまま(143)。npx playwright test e2e/webmcp.spec.ts
+      e2e/webmcp-approval.spec.ts: 20 passed (2026-09-26)"
     evidence: e2e/webmcp.spec.ts:131

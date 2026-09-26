@@ -1,7 +1,7 @@
 // @covers AC-069, AC-072, AC-073, AC-074, AC-075, AC-076, AC-077, AC-078, AC-082, AC-083, AC-084, AC-127, AC-128, AC-129, AC-134
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { closeDb, db, seedNote, type UserName, resetAskQuota } from "./helpers";
+import { closeDb, db, seedNote, USER_ID, type UserName, resetAskQuota } from "./helpers";
 import { AS_027_TOOLS, exec, loginWithWebMcp, toolNames, waitTools, webmcpContext } from "./webmcp-helpers";
 import { call, mcpClient } from "./mcp-helpers";
 import { loadScenarios, loadWorkspaces, noteId } from "../src/seed/fixtures";
@@ -201,6 +201,33 @@ test("AC-069: Web UI の検索API・サーバMCP・WebMCP の search_knowledge �
   await context.close();
 });
 
+/** そのユーザーとして RLS を通したときに見えるノートの id（テスト側の独立な正解） */
+async function visibleNoteIds(user: UserName): Promise<Set<string>> {
+  const c = await db().connect();
+  try {
+    await c.query("begin");
+    await c.query("set local role authenticated");
+    await c.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: USER_ID[user], role: "authenticated" })]);
+    const { rows } = await c.query("select id from public.notes");
+    return new Set(rows.map((r) => r.id as string));
+  } finally {
+    await c.query("rollback");
+    c.release();
+  }
+}
+
+/** ツール結果に含まれるノート id（note_id / from_note_id / to_note_id / note_ids）をすべて集める */
+function noteIdsIn(v: unknown, out: string[] = []): string[] {
+  if (Array.isArray(v)) v.forEach((x) => noteIdsIn(x, out));
+  else if (v && typeof v === "object")
+    for (const [k, x] of Object.entries(v)) {
+      if ((k === "note_id" || k === "from_note_id" || k === "to_note_id") && typeof x === "string") out.push(x);
+      else if (k === "note_ids" && Array.isArray(x)) out.push(...x.filter((y): y is string => typeof y === "string"));
+      else noteIdsIn(x, out);
+    }
+  return out;
+}
+
 test("AC-127: 各ユーザーで id を取る5ツールは不可視ノートに存在しない id と同じ NOT_FOUND を返して遷移せず、12ツールの結果に不可視ノートの情報を含まない", async ({ browser }) => {
   const ws = loadWorkspaces();
   for (const user of ["misaki", "kenta", "sho"] as UserName[]) {
@@ -239,8 +266,16 @@ test("AC-127: 各ユーザーで id を取る5ツールは不可視ノートに�
       await exec(page, "draft_note", { title: `下書き ${hid.slice(0, 4)}`, body: "" }),
     ];
     for (const r of hiddenResults) expect(r).toMatchObject({ code: "NOT_FOUND" });
-    expect(hiddenResults.map((r) => (r as { code: string }).code)).toEqual(missingResults.map((r) => (r as { code: string }).code));
+    // 不可視の id と存在しない id で、結果はオブジェクトごと同じ（message も含めて区別できない）
+    expect(hiddenResults).toEqual(missingResults);
     expect(others[5]).toMatchObject({ code: "NOT_FOUND" });
+    // 件数に不可視ノートを数えない: 結果に現れるノート id はすべて、そのユーザーが RLS で見えるものだけ
+    const visible = await visibleNoteIds(user);
+    const referenced = noteIdsIn(others);
+    expect(referenced.length, `${user}: 検索・回答・提案一覧がノートを返している`).toBeGreaterThan(0);
+    for (const id of referenced) expect(visible.has(id), `${user}: ${id} は見えないノート`).toBe(true);
+    const pending = (others[2] as { relations: { id: string }[] }).relations;
+    expect(pending.map((r) => r.id)).not.toContain(rel);
     const json = JSON.stringify([...hiddenResults, ...others]);
     for (const n of invisible) {
       expect(json, `${user}: ${n.slug}`).not.toContain(noteId(n.slug));
