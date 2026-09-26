@@ -1,6 +1,5 @@
 "use server";
-// @covers AC-018, AC-019, AC-020, AC-022, AC-023, AC-024, AC-025, AC-132
-// @assumption AS-067
+// @covers AC-018, AC-019, AC-020, AC-022, AC-023, AC-024, AC-025, AC-132, AC-138
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createNote, getNote, setShare, updateNote } from "@/core/notes";
@@ -35,9 +34,10 @@ export async function saveNoteAction(_prev: FormState, form: FormData): Promise<
 async function changeField(form: FormData, patch: Record<string, unknown>): Promise<void> {
   const id = String(form.get("id"));
   const supabase = await createClient();
-  await updateNote(supabase, id, { ...patch, expected_version: Number(form.get("version")) });
+  const res = await updateNote(supabase, id, { ...patch, expected_version: Number(form.get("version")) });
   revalidatePath(`/notes/${id}`);
-  redirect(`/notes/${id}`);
+  // 失敗したらノート画面にエラーを表示する（AC-138）
+  redirect(res.ok ? `/notes/${id}` : `/notes/${id}?error=${res.code.toLowerCase()}`);
 }
 
 export async function publishNoteAction(form: FormData): Promise<void> {

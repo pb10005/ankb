@@ -16,8 +16,6 @@
 -- @assumption AS-003
 -- @assumption AS-010
 -- @assumption AS-052
--- @assumption AS-063
--- @assumption AS-064
 -- @assumption AS-065
 -- @assumption AS-066
 --

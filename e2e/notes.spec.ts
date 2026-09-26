@@ -1,4 +1,4 @@
-// @covers AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-024, AC-025, AC-026, AC-130, AC-131, AC-132
+// @covers AC-018, AC-019, AC-020, AC-021, AC-022, AC-023, AC-024, AC-025, AC-026, AC-130, AC-131, AC-132, AC-138, AC-139
 import { test, expect } from "@playwright/test";
 import { closeDb, db, loginAs, noteInDb, seedNote, seedShare, USER_ID } from "./helpers";
 
@@ -188,4 +188,38 @@ test("AC-132: 同じ版を開いた2人のうち後から保存した翔に『�
   );
   expect((await noteInDb(note.id)).body).toBe("美咲の保存内容");
   await Promise.all([misaki.context.close(), sho.context.close()]);
+});
+
+test("AC-138: 画面を開いた後に版が上がると、アーカイブ・公開・公開範囲の変更で競合メッセージを表示し値は変わらない", async ({ browser }) => {
+  const misaki = await loginAs(browser, "misaki");
+  const cases: { status: string; action: (p: import("@playwright/test").Page) => Promise<void> }[] = [
+    { status: "active", action: (p) => p.getByRole("button", { name: "アーカイブ" }).click() },
+    { status: "draft", action: (p) => p.getByRole("button", { name: "公開する（有効にする）" }).click() },
+    {
+      status: "active",
+      action: async (p) => {
+        await p.getByLabel("公開範囲", { exact: true }).selectOption({ label: "チーム全体" });
+        await p.getByRole("button", { name: "公開範囲を変更" }).click();
+      },
+    },
+  ];
+  for (const c of cases) {
+    const note = await seedNote({ owner: "misaki", status: c.status, visibility: "private" });
+    await misaki.page.goto(`/notes/${note.id}`);
+    await db().query("update public.notes set body = body || ' 別の編集' where id = $1", [note.id]);
+    await c.action(misaki.page);
+    await expect(misaki.page.getByRole("alert").filter({ hasText: "ほかの人が先に更新しました。再読み込みしてください" })).toBeVisible();
+    const row = await noteInDb(note.id);
+    expect([row.status, row.visibility]).toEqual([c.status, "private"]);
+  }
+  await misaki.context.close();
+});
+
+test("AC-139: 未ログインで /notes と /notes/{id} を開くと next に元のパスを付けて /login へ遷移する", async ({ page }) => {
+  const note = await seedNote({ owner: "misaki" });
+  await page.goto("/notes");
+  await expect(page).toHaveURL(/\/login\?next=%2Fnotes$/);
+  await page.goto(`/notes/${note.id}`);
+  await expect(page).toHaveURL(new RegExp(`/login\\?next=%2Fnotes%2F${note.id}$`));
+  await expect(page.getByRole("form", { name: "ログイン" })).toBeVisible();
 });

@@ -1,6 +1,5 @@
 // @covers AC-035
 // @assumption AS-039
-// @assumption AS-069
 // クエリ展開（言い換え・同義語）。Claude の構造化出力で最大3件の言い換えを得る。
 // 失敗・タイムアウト（3秒）・API キー未設定のときは元のクエリだけを返し、検索は止めない（AC-035）。
 import Anthropic from "@anthropic-ai/sdk";

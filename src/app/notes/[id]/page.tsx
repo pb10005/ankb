@@ -1,15 +1,29 @@
-// @covers AC-018, AC-020, AC-024, AC-025, AC-026, AC-131
+// @covers AC-018, AC-020, AC-024, AC-025, AC-026, AC-131, AC-138
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { canEdit, getNote, listColleagues, listShares } from "@/core/notes";
+import { canEdit, CONFLICT_MESSAGE, getNote, listColleagues, listShares } from "@/core/notes";
 import { PERMISSION_LABEL, STATUS_LABEL, VISIBILITY_LABEL, type Visibility } from "@/core/labels";
 import { requireUser } from "@/lib/session";
 import { archiveNoteAction, publishNoteAction, setShareAction, setVisibilityAction } from "../actions";
 
-export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
+const ERROR_MESSAGES: Record<string, string> = {
+  conflict: CONFLICT_MESSAGE,
+  forbidden: "この操作を行う権限がありません",
+  validation_error: "入力内容を確認してください",
+  not_found: "ノートが見つかりません",
+};
+
+export default async function NotePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { id } = await params;
+  const { error } = await searchParams;
   const { supabase, user } = await requireUser(`/notes/${id}`);
   const res = await getNote(supabase, id);
   // 閲覧できないノートは存在しないノートと同じ 404（AS-051）
@@ -26,6 +40,11 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
         <Link href="/notes">← ノート一覧</Link>
       </p>
       <h1>{note.title}</h1>
+      {error && ERROR_MESSAGES[error] && (
+        <p role="alert" className="error">
+          {ERROR_MESSAGES[error]}
+        </p>
+      )}
       <p className="badges">
         {note.status !== "active" && <span className="badge">{STATUS_LABEL[note.status]}</span>}
         <span className="badge">{VISIBILITY_LABEL[note.visibility]}</span>

@@ -52,14 +52,14 @@ assumptions:
     resolve_by: "2026-10-09"
   - id: AS-063
     statement: "notes.status の直接の遷移は draft→active、draft→archived、active→archived の3つだけとし、archived は v1 では終端（アーカイブの解除は無い）とする。superseded のノートは置き換えを取り消すまでアーカイブできない"
-    status: assumed
+    status: confirmed
     owner: pb10005
-    resolve_by: "2026-10-09"
+    resolve_by: "2026-09-26"
   - id: AS-064
     statement: "置き換えの承認・取り消しによる status / superseded_by の変更（状態遷移トリガー経由）では version と updated_at を変えない。version は本文・タイトル・公開範囲の編集に対する楽観ロック（AS-052）にだけ使う"
-    status: assumed
+    status: confirmed
     owner: pb10005
-    resolve_by: "2026-10-09"
+    resolve_by: "2026-09-26"
   - id: AS-065
     statement: "note_relation の proposed_by=ai はバックグラウンドジョブ（サービスロール）だけが作れる。利用者のトークンで作れる提案は user / agent のみとし、提案者を created_by に記録する"
     status: assumed
@@ -237,3 +237,12 @@ acceptance:
     verified_at: 2026-09-25
     note: 美咲承認直後の翔の却下がALREADY_RESOLVED、state=confirmed、resolved_by=美咲。FOR UPDATEはmigration:292
     evidence: tests/db/relation-state.test.ts:175
+  - kind: functional
+    id: AC-137
+    given: version=1 の active なノート A と、B→A の proposed な supersedes
+    when: resolve_relation で承認し、続けて取り消す
+    then: 承認後も取り消し後も A の version は 1 のまま、updated_at は承認前と同じ値を返す
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0

@@ -1,4 +1,4 @@
-// @covers AC-001, AC-004
+// @covers AC-001, AC-004, AC-135, AC-139
 // 全リクエストで Supabase のセッション cookie を更新し、未ログインで保護ページを開いたら /login へ送る。
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";

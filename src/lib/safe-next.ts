@@ -1,5 +1,4 @@
 // @covers AC-133
-// @assumption AS-055
 // ログイン後の遷移先 next パラメータを、同一オリジンの相対パスだけに制限する（open redirect 対策）。
 export const DEFAULT_AFTER_LOGIN = "/dashboard";
 

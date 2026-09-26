@@ -1,4 +1,4 @@
-// @covers AC-001, AC-002, AC-003, AC-004, AC-133
+// @covers AC-001, AC-002, AC-003, AC-004, AC-133, AC-135, AC-136
 import { test, expect } from "@playwright/test";
 import { MISAKI, fillLogin } from "./fixtures";
 
@@ -44,4 +44,21 @@ test("AC-133: next に外部URLを渡してログインしても外部へは遷�
   await page.goto("/login?next=https://evil.example/");
   await fillLogin(page, MISAKI.email, MISAKI.password);
   await expect(page).toHaveURL(/^http:\/\/127\.0\.0\.1:\d+\/dashboard$/);
+});
+
+test("AC-135: 未ログインで /notes を開いてログインすると /notes へ遷移しノート一覧を表示する", async ({ page }) => {
+  await page.goto("/notes");
+  await expect(page).toHaveURL(/\/login\?next=%2Fnotes$/);
+  await fillLogin(page, MISAKI.email, MISAKI.password);
+  await expect(page).toHaveURL(/\/notes$/);
+  await expect(page.getByRole("heading", { level: 1, name: "ノート" })).toBeVisible();
+});
+
+test("AC-136: ログイン済みで / を開くと /dashboard へ遷移しダッシュボードを表示する", async ({ page }) => {
+  await page.goto("/login");
+  await fillLogin(page, MISAKI.email, MISAKI.password);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { level: 1, name: "ダッシュボード" })).toBeVisible();
 });

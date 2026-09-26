@@ -59,9 +59,9 @@ assumptions:
     resolve_by: "2026-10-09"
   - id: AS-067
     statement: "非公開（private）のノートで共有先を追加したら、公開範囲を『指定した人』（shared）に切り替える。非公開のままでは共有先が読めない（§5.1）ため"
-    status: assumed
+    status: confirmed
     owner: pb10005
-    resolve_by: "2026-10-09"
+    resolve_by: "2026-09-26"
 
 open_questions: []
 
@@ -234,3 +234,21 @@ acceptance:
     verified_at: 2026-09-25
     note: version=3を確認後、2人が編集画面を開き美咲保存->翔保存でalert文言一致、DB bodyが美咲の保存内容のままを検証。passed
     evidence: e2e/notes.spec.ts:168
+  - kind: functional
+    id: AC-138
+    given: 美咲がノート画面を開いた後に、別の編集で version が上がった状態
+    when: 美咲が『アーカイブ』『公開する（有効にする）』『公開範囲を変更』のいずれかを押す
+    then: 『ほかの人が先に更新しました。再読み込みしてください』を表示し、status と visibility は変わらない
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0
+  - kind: functional
+    id: AC-139
+    given: 未ログインのブラウザ
+    when: /notes と /notes/{id} を開く
+    then: /login へ遷移し、next に元のパスを含む URL を表示する
+    priority: must
+    verify: test
+    status: pending
+    attempts: 0

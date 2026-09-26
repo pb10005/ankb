@@ -1,4 +1,4 @@
-// @covers AC-010, AC-011, AC-012, AC-013, AC-014, AC-093, AC-094, AC-095, AC-096, AC-097, AC-098, AC-099, AC-113
+// @covers AC-010, AC-011, AC-012, AC-013, AC-014, AC-093, AC-094, AC-095, AC-096, AC-097, AC-098, AC-099, AC-113, AC-137
 import { afterAll, describe, expect, it } from "vitest";
 import { admin, asUser, closeAdmin, createNote, noteRow, relate, relationRow, share, uid, SAMPLE_WS } from "../helpers/db";
 
@@ -218,14 +218,21 @@ describe("閲覧できない相手の情報を漏らさない（§5.2-4）", () 
 });
 
 describe("状態遷移トリガーは version を上げない", () => {
-  it("AS-064: 承認で superseded になった A の version は承認前と同じ（編集中の利用者を CONFLICT にしない）", async () => {
+  it("AC-137: 承認後も取り消し後も A の version は 1 のまま、updated_at は承認前と同じ", async () => {
     const a = await createNote({ owner: "misaki" });
     const b = await createNote({ owner: "misaki" });
-    const before = (await noteRow(a)).version;
+    const before = await admin().query("select version, updated_at from public.notes where id = $1", [a]);
+    expect(before.rows[0].version).toBe(1);
     const rel = await relate(b, a, "supersedes");
     expect((await resolve("misaki", rel, "confirm")).error).toBeNull();
-    const row = await noteRow(a);
-    expect(row.status).toBe("superseded");
-    expect(row.version).toBe(before);
+    const afterConfirm = (await admin().query("select status, version, updated_at from public.notes where id = $1", [a])).rows[0];
+    expect(afterConfirm.status).toBe("superseded");
+    expect(afterConfirm.version).toBe(1);
+    expect(afterConfirm.updated_at).toEqual(before.rows[0].updated_at);
+    expect((await resolve("misaki", rel, "revoke")).error).toBeNull();
+    const afterRevoke = (await admin().query("select status, version, updated_at from public.notes where id = $1", [a])).rows[0];
+    expect(afterRevoke.status).toBe("active");
+    expect(afterRevoke.version).toBe(1);
+    expect(afterRevoke.updated_at).toEqual(before.rows[0].updated_at);
   });
 });

@@ -78,9 +78,9 @@ assumptions:
     resolve_by: "2026-10-09"
   - id: AS-069
     statement: "クエリ展開は claude-opus-5（環境変数 ANKB_QUERY_EXPANSION_MODEL で変更可）を effort=low・構造化出力（json_schema）で呼び、元の質問に最大3件の言い換えを加える。拒否に備えて server-side fallback（fallbacks: default）を付ける。ANTHROPIC_API_KEY が無い環境では展開しない"
-    status: assumed
+    status: confirmed
     owner: pb10005
-    resolve_by: "2026-10-09"
+    resolve_by: "2026-09-26"
   - id: AS-070
     statement: "ベクトル検索はコサイン類似度 0.3 以上のチャンクだけを候補にする（環境変数 ANKB_VECTOR_MIN_SIMILARITY で変更可）。近傍検索は質問と無関係なチャンクも上位件数まで必ず返し、無関係なノートの矛盾・旧情報が結果に混ざるため"
     status: assumed
